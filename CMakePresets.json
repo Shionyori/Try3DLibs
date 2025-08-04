@@ -1,0 +1,30 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 16,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "win-pcl-opencv",
+      "displayName": "Windows MSVC",
+      "description": "Development configuration for Windows",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "cl.exe",
+        "CMAKE_CXX_COMPILER": "cl.exe",
+        "CMAKE_MAKE_PROGRAM": "ninja.exe",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "PCL_ROOT": "D:/SDK/PCL-1.15.0",
+        "BOOST_ROOT": "D:/SDK/PCL-1.15.0/3rdParty/Boost",
+        "Boost_ROOT": "D:/SDK/PCL-1.15.0/3rdParty/Boost",
+        "QHULL_ROOT": "D:/SDK/PCL-1.15.0/3rdParty/Qhull",
+        "FLANN_ROOT": "D:/SDK/PCL-1.15.0/3rdParty/Flann",
+        "OPENNI2_ROOT": "D:/SDK/PCL-1.15.0/3rdParty/OpenNI2",
+        "OpenCV_DIR": "D:/SDK/opencv/build"
+      }
+    }
+  ]
+}
