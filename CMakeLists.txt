@@ -19,9 +19,12 @@ add_definitions(${PCL_DEFINITIONS})
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-qt_add_executable(${PROJECT_NAME} 
-    main.cpp
+file(GLOB_RECURSE PROJECT_SOURCES 
+    src/*.cpp
+    src/*.h
 )
+
+qt_add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${PROJECT_SOURCES})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Widgets
