@@ -10,12 +10,10 @@
       "name": "win-pcl-opencv",
       "displayName": "Windows MSVC",
       "description": "Development configuration for Windows",
-      "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "cl.exe",
         "CMAKE_CXX_COMPILER": "cl.exe",
-        "CMAKE_MAKE_PROGRAM": "ninja.exe",
         "CMAKE_BUILD_TYPE": "Debug",
         "PCL_ROOT": "D:/SDK/PCL-1.15.0",
         "BOOST_ROOT": "D:/SDK/PCL-1.15.0/3rdParty/Boost",
