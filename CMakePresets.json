@@ -7,13 +7,12 @@
   },
   "configurePresets": [
     {
-      "name": "win-pcl-opencv",
-      "displayName": "Windows MSVC",
-      "description": "Development configuration for Windows",
+      "name": "default",
+      "displayName": "Default configuration",
+      "description": "Default configuration using Ninja and MSVC",
+      "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
-        "CMAKE_C_COMPILER": "cl.exe",
-        "CMAKE_CXX_COMPILER": "cl.exe",
         "CMAKE_BUILD_TYPE": "Debug",
         "PCL_ROOT": "D:/SDK/PCL-1.15.0",
         "BOOST_ROOT": "D:/SDK/PCL-1.15.0/3rdParty/Boost",
@@ -22,7 +21,15 @@
         "FLANN_ROOT": "D:/SDK/PCL-1.15.0/3rdParty/Flann",
         "OPENNI2_ROOT": "D:/SDK/PCL-1.15.0/3rdParty/OpenNI2",
         "OpenCV_DIR": "D:/SDK/opencv/build"
-      }
+      },
+      "toolchainFile": "${sourceDir}/toolchain-msvc.cmake"
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default",
+      "displayName": "Default Build",
+      "configurePreset": "default"
     }
   ]
 }
