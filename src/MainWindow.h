@@ -1,15 +1,15 @@
+// src/MainWindow.h
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QSplitter>
 
-class ElementListWidget;
-class ImageWidget;
-class FileListWidget;
-class OperationWidget;
-class PropertyWidget;
-class VTKWidget;
+class ElementListDock;
+class FileListDock;
+class ImageDisplayWidget;
+class VTKDisplayWidget;
+class PropertyDisplayDock;
+class OperationButtonDock;
 
 class MainWindow : public QMainWindow
 {
@@ -20,21 +20,15 @@ public:
     ~MainWindow();
 
 private:
-    void setupMenu();
-    void setupToolBar();
-    void setupWidgets();
+    ElementListDock* elementListDock;
+    FileListDock* fileListDock;
+    ImageDisplayWidget* imageDisplayWidget;
+    VTKDisplayWidget* vtkDisplayWidget;
+    PropertyDisplayDock* propertyDisplayDock;
+    OperationButtonDock* operationButtonDock;
 
-    QSplitter* createMainSplitter();
-    QSplitter* createRightSplitter();
-    QSplitter* createTopRightSplitter();
-    QSplitter* createBottomRightSplitter();
-
-    ElementListWidget* elementListWidget;
-    ImageWidget* imageWidget;
-    FileListWidget* fileListWidget;
-    OperationWidget* operationWidget;
-    PropertyWidget* propertyWidget;
-    VTKWidget* vtkWidget;
+    void createDocks();
+    void createCentralWidget();
 };
 
 #endif // MAINWINDOW_H

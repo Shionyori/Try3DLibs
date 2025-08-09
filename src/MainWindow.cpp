@@ -1,138 +1,52 @@
-#include "mainwindow.h"
-#include <QMenuBar>
-#include <QToolBar>
-#include <QBoxLayout>
+// src/MainWindow.cpp
+#include "MainWindow.h"
+#include "components/ElementListDock.h"
+#include "components/FileListDock.h"
+#include "components/ImageDisplayWidget.h"
+#include "components/VTKDisplayWidget.h"
+#include "components/PropertyDisplayDock.h"
+#include "components/OperationButtonDock.h"
 
-#include "components/ElementListWidget.h"
-#include "components/ImageWidget.h"
-#include "components/FileListWidget.h"
-#include "components/OperationWidget.h"
-#include "components/PropertyWidget.h"
-#include "components/VTKWidget.h"
+#include <QSplitter>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    setupMenu();
-    setupToolBar();
-    setupWidgets();
-
-    setMinimumSize(800, 600);
+    setGeometry(150, 75, 1400, 900);
+    createDocks();
+    createCentralWidget();
 }
 
-MainWindow::~MainWindow()
+MainWindow::~MainWindow() {}
+
+void MainWindow::createDocks()
 {
+    // 创建ElementListDock
+    elementListDock = new ElementListDock(this);
+    addDockWidget(Qt::LeftDockWidgetArea, elementListDock);
+
+    // 创建FileListDock
+    fileListDock = new FileListDock(this);
+    addDockWidget(Qt::LeftDockWidgetArea, fileListDock);
+
+    // 创建PropertyDisplayDock
+    propertyDisplayDock = new PropertyDisplayDock(this);
+    addDockWidget(Qt::BottomDockWidgetArea, propertyDisplayDock);
+
+    // 创建OperationButtonDock
+    operationButtonDock = new OperationButtonDock(this);
+    addDockWidget(Qt::BottomDockWidgetArea, operationButtonDock);
 }
 
-void MainWindow::setupMenu()
+void MainWindow::createCentralWidget()
 {
-    QMenuBar* menuBar = new QMenuBar(this);
-    setMenuBar(menuBar);
+    // 创建ImageDisplayWidget和VTKDisplayWidget
+    imageDisplayWidget = new ImageDisplayWidget(this);
+    vtkDisplayWidget = new VTKDisplayWidget(this);
 
-    QMenu* fileMenu = new QMenu("文件", this);
-    menuBar->addMenu(fileMenu);
+    QSplitter* centralSplitter = new QSplitter(Qt::Horizontal, this);
+    centralSplitter->addWidget(imageDisplayWidget);
+    centralSplitter->addWidget(vtkDisplayWidget);
 
-    QAction* openAction = new QAction("打开", this);
-    QAction* saveAction = new QAction("保存", this);
-    fileMenu->addAction(openAction);
-    fileMenu->addAction(saveAction);
-
-    menuBar->setStyleSheet(
-        "QMenuBar { background-color: #333; color: white; }"
-        "QMenu { background-color: #555; color: white; }"
-        "QMenu::item:selected { background-color: #777; }"
-    );
-}
-
-void MainWindow::setupToolBar()
-{
-    QToolBar* toolBar = new QToolBar("工具栏", this);
-    toolBar->setMovable(true);
-    addToolBar(toolBar);
-
-    toolBar->addAction(new QAction("工具A", this));
-    toolBar->addAction(new QAction("工具B", this));
-
-    toolBar->setStyleSheet(
-        "QToolBar { background-color: #444; color: white; }"
-        "QToolBar QToolButton { background-color: #666; color: white; }"
-        "QToolBar QToolButton:hover { background-color: #888; }"
-    );
-}
-
-void MainWindow::setupWidgets()
-{
-    QWidget* centralWidget = new QWidget(this);
-    setCentralWidget(centralWidget);
-
-    QVBoxLayout* mainLayout = new QVBoxLayout(centralWidget);
-
-    QSplitter* mainSplitter = createMainSplitter();
-    mainLayout->addWidget(mainSplitter);
-
-    centralWidget->setLayout(mainLayout);
-}
-
-QSplitter* MainWindow::createMainSplitter()
-{
-    QSplitter* mainSplitter = new QSplitter(Qt::Horizontal);
-    mainSplitter->setChildrenCollapsible(false);
-
-    elementListWidget = new ElementListWidget();
-    mainSplitter->addWidget(elementListWidget);
-
-    QSplitter* rightSplitter = createRightSplitter();
-    mainSplitter->addWidget(rightSplitter);
-
-    return mainSplitter;
-}
-
-QSplitter* MainWindow::createRightSplitter()
-{
-    QSplitter* rightSplitter = new QSplitter(Qt::Vertical);
-    rightSplitter->setChildrenCollapsible(false);
-
-    QSplitter* topRightSplitter = createTopRightSplitter();
-    rightSplitter->addWidget(topRightSplitter);
-
-    QSplitter* bottomRightSplitter = createBottomRightSplitter();
-    rightSplitter->addWidget(bottomRightSplitter);
-
-    return rightSplitter;
-}
-
-QSplitter* MainWindow::createTopRightSplitter()
-{
-    QSplitter* topRightSplitter = new QSplitter(Qt::Horizontal);
-    topRightSplitter->setChildrenCollapsible(false);
-
-    imageWidget = new ImageWidget();
-    topRightSplitter->addWidget(imageWidget);
-
-    QSplitter* fileListAndOperationSplitter = new QSplitter(Qt::Vertical);
-    fileListAndOperationSplitter->setChildrenCollapsible(false);
-
-    fileListWidget = new FileListWidget();
-    fileListAndOperationSplitter->addWidget(fileListWidget);
-
-    operationWidget = new OperationWidget();
-    fileListAndOperationSplitter->addWidget(operationWidget);
-
-    topRightSplitter->addWidget(fileListAndOperationSplitter);
-
-    return topRightSplitter;
-}
-
-QSplitter* MainWindow::createBottomRightSplitter()
-{
-    QSplitter* bottomRightSplitter = new QSplitter(Qt::Horizontal);
-    bottomRightSplitter->setChildrenCollapsible(false);
-
-    propertyWidget = new PropertyWidget();
-    bottomRightSplitter->addWidget(propertyWidget);
-
-    vtkWidget = new VTKWidget();
-    bottomRightSplitter->addWidget(vtkWidget);
-
-    return bottomRightSplitter;
+    setCentralWidget(centralSplitter);
 }
