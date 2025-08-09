@@ -7,10 +7,28 @@
   },
   "configurePresets": [
     {
-      "name": "default",
-      "displayName": "Default configuration",
-      "description": "Default configuration using Ninja and MSVC",
+      "name": "ninja-msvc",
+      "displayName": "Ninja with MSVC",
+      "description": "Configuration using Ninja and MSVC",
       "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "PCL_ROOT": "D:/SDK/PCL-1.15.0",
+        "BOOST_ROOT": "D:/SDK/PCL-1.15.0/3rdParty/Boost",
+        "Boost_ROOT": "D:/SDK/PCL-1.15.0/3rdParty/Boost",
+        "QHULL_ROOT": "D:/SDK/PCL-1.15.0/3rdParty/Qhull",
+        "FLANN_ROOT": "D:/SDK/PCL-1.15.0/3rdParty/Flann",
+        "OPENNI2_ROOT": "D:/SDK/PCL-1.15.0/3rdParty/OpenNI2",
+        "OpenCV_DIR": "D:/SDK/opencv/build"
+      },
+      "toolchainFile": "${sourceDir}/toolchain-msvc.cmake"
+    },
+    {
+      "name": "vs-msvc",
+      "displayName": "Visual Studio with MSVC",
+      "description": "Configuration using Visual Studio and MSVC",
+      "generator": "Visual Studio 17 2022",
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
@@ -27,9 +45,14 @@
   ],
   "buildPresets": [
     {
-      "name": "default",
-      "displayName": "Default Build",
-      "configurePreset": "default"
+      "name": "ninja-msvc-build",
+      "displayName": "Ninja Build",
+      "configurePreset": "ninja-msvc"
+    },
+    {
+      "name": "vs-msvc-build",
+      "displayName": "Visual Studio Build",
+      "configurePreset": "vs-msvc"
     }
   ]
 }
