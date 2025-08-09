@@ -1,3 +1,5 @@
-build/
+/build
+/out
 .vscode
-resource
+CMakeUserPresets.json
+CMakeLists.txt.user
