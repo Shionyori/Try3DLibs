@@ -36,6 +36,8 @@ void MainWindow::createDocks()
     // 创建OperationButtonDock
     operationButtonDock = new OperationButtonDock(this);
     addDockWidget(Qt::BottomDockWidgetArea, operationButtonDock);
+
+    setCorner(Qt::BottomLeftCorner, Qt::LeftDockWidgetArea);
 }
 
 void MainWindow::createCentralWidget()
@@ -47,6 +49,9 @@ void MainWindow::createCentralWidget()
     QSplitter* centralSplitter = new QSplitter(Qt::Horizontal, this);
     centralSplitter->addWidget(imageDisplayWidget);
     centralSplitter->addWidget(vtkDisplayWidget);
+
+    // 设置初始大小
+    centralSplitter->setSizes({500, 500});
 
     setCentralWidget(centralSplitter);
 }
