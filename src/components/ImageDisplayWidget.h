@@ -4,6 +4,8 @@
 
 #include <QWidget>
 #include <QLabel>
+#include <QImage>
+#include <opencv2/opencv.hpp>
 
 class ImageDisplayWidget : public QWidget
 {
@@ -11,6 +13,11 @@ class ImageDisplayWidget : public QWidget
 
 public:
     ImageDisplayWidget(QWidget *parent = nullptr);
+    void loadAndDisplayImage(const QString &filePath);
+    
+private:
+    QLabel *label;
+    QImage qImage;
 };
 
 #endif // IMAGEDISPLAYWIDGET_H

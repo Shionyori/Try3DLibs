@@ -27,6 +27,8 @@ private:
     PropertyDisplayDock* propertyDisplayDock;
     OperationButtonDock* operationButtonDock;
 
+    void setupMenu();
+    void setupToolBar();
     void createDocks();
     void createCentralWidget();
 };

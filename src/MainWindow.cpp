@@ -8,16 +8,59 @@
 #include "components/OperationButtonDock.h"
 
 #include <QSplitter>
+#include <QMenuBar>
+#include <QToolBar>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
     setGeometry(150, 75, 1400, 900);
+    setupMenu();
+    setupToolBar();
     createDocks();
     createCentralWidget();
+
+    // 测试图片加载
+    imageDisplayWidget->loadAndDisplayImage(".\\..\\..\\res\\TestImage-Chan.png");
 }
 
 MainWindow::~MainWindow() {}
+
+void MainWindow::setupMenu()
+{
+    QMenuBar* menuBar = new QMenuBar(this);
+    setMenuBar(menuBar);
+
+    QMenu* fileMenu = new QMenu("File", this);
+    menuBar->addMenu(fileMenu);
+
+    QAction* openAction = new QAction("Open", this);
+    QAction* saveAction = new QAction("Save", this);
+    fileMenu->addAction(openAction);
+    fileMenu->addAction(saveAction);
+
+    menuBar->setStyleSheet(
+        "QMenuBar { background-color: #333; color: white; }"
+        "QMenu { background-color: #555; color: white; }"
+        "QMenu::item:selected { background-color: #777; }"
+    );
+}
+
+void MainWindow::setupToolBar()
+{
+    QToolBar* toolBar = new QToolBar("Toolbar", this);
+    toolBar->setMovable(true);
+    addToolBar(toolBar);
+
+    toolBar->addAction(new QAction("ToolA", this));
+    toolBar->addAction(new QAction("ToolB", this));
+
+    toolBar->setStyleSheet(
+        "QToolBar { background-color: #444; color: white; }"
+        "QToolBar QToolButton { background-color: #666; color: white; }"
+        "QToolBar QToolButton:hover { background-color: #888; }"
+    );
+}
 
 void MainWindow::createDocks()
 {
