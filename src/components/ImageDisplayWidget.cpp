@@ -1,44 +1,125 @@
 // src/components/ImageDisplayWidget.cpp
 #include "ImageDisplayWidget.h"
-#include <QBoxLayout>
-#include <QMessageBox>
-#include <QVBoxLayout>
-#include <QPixmap>
-#include <QScrollArea>
-#include <QWheelEvent>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 
 ImageDisplayWidget::ImageDisplayWidget(QWidget *parent)
-    : QWidget(parent)
+    : QWidget(parent), zoomFactor(1.0), minZoomFactor(0.1), maxZoomFactor(2.0)
 {
-    label = new QLabel("Image Display Area", this);
-    label->setAlignment(Qt::AlignCenter);
+    setupUI();
+}
 
-    QScrollArea *scrollArea = new QScrollArea(this);
-    scrollArea->setWidget(label);
+void ImageDisplayWidget::setupUI()
+{
+    scrollArea = new QScrollArea(this);
     scrollArea->setWidgetResizable(true);
 
-    QVBoxLayout *layout = new QVBoxLayout(this);
-    layout->addWidget(scrollArea);
-    setLayout(layout);
+    imageLabel = new QLabel(this);
+    imageLabel->setAlignment(Qt::AlignCenter);
+    scrollArea->setWidget(imageLabel);
 
-    // 将 QScrollArea 的 viewport 的滚轮事件传递给 ImageDisplayWidget
-    scrollArea->viewport()->installEventFilter(this);
+    loadButton = new QPushButton("Load", this);
+    connect(loadButton, &QPushButton::clicked, this, [this]() {
+        QString filePath = QFileDialog::getOpenFileName(this, "Open Image", "", "Image Files (*.png *.jpg *.bmp)");
+        if (!filePath.isEmpty()) {
+            loadAndDisplayImage(filePath);
+        }
+    });
+
+    grayscaleButton = new QPushButton("Grayscale", this);
+    connect(grayscaleButton, &QPushButton::clicked, this, [this]() {
+        convertToGrayscale();
+    });
+
+    zoomInButton = new QPushButton("+", this);
+    zoomInButton->setFixedSize(30, 30);
+    connect(zoomInButton, &QPushButton::clicked, this, [this]() {
+        zoomIn();
+    });
+
+    zoomOutButton = new QPushButton("-", this);
+    zoomOutButton->setFixedSize(30, 30);
+    connect(zoomOutButton, &QPushButton::clicked, this, [this]() {
+        zoomOut();
+    });
+
+    zoomSlider = new QSlider(Qt::Horizontal, this);
+    zoomSlider->setRange(10, 200); // 设置范围
+    zoomSlider->setValue(100); // 初始值为100，对应1.0缩放比例
+    connect(zoomSlider, &QSlider::valueChanged, this, &ImageDisplayWidget::onZoomSliderValueChanged);
+
+    QHBoxLayout *bottomLayout = new QHBoxLayout();
+    bottomLayout->addWidget(zoomOutButton);
+    bottomLayout->addWidget(zoomSlider);
+    bottomLayout->addWidget(zoomInButton);
+
+    QVBoxLayout *mainLayout = new QVBoxLayout(this);
+    mainLayout->addWidget(scrollArea);
+    mainLayout->addLayout(bottomLayout);
+    mainLayout->addWidget(loadButton);
+    mainLayout->addWidget(grayscaleButton);
+
+    setLayout(mainLayout);
 }
 
 void ImageDisplayWidget::loadAndDisplayImage(const QString &filePath)
 {
-    cv::Mat img = cv::imread(filePath.toStdString());
-    if (img.empty())
+    originalImage = cv::imread(filePath.toStdString());
+    if (!originalImage.empty())
     {
-        QMessageBox::critical(this, "Error", "无法加载图像！");
-        return;
+        cvtColor(originalImage, originalImage, cv::COLOR_BGR2RGB);
+        QImage qImage(originalImage.data, originalImage.cols, originalImage.rows, originalImage.step, QImage::Format_RGB888);
+        currentPixmap = QPixmap::fromImage(qImage);
+        displayPixmap();
     }
+}
 
-    cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
-    qImage = QImage(img.data, img.cols, img.rows, img.step, QImage::Format_RGB888);
+void ImageDisplayWidget::convertToGrayscale()
+{
+    if (!originalImage.empty())
+    {
+        cv::cvtColor(originalImage, grayscaleImage, cv::COLOR_RGB2GRAY);
+        QImage qImage(grayscaleImage.data, grayscaleImage.cols, grayscaleImage.rows, grayscaleImage.step, QImage::Format_Grayscale8);
+        currentPixmap = QPixmap::fromImage(qImage);
+        displayPixmap();
+    }
+}
 
-    QPixmap pixmap = QPixmap::fromImage(qImage);
-    label->setPixmap(pixmap);
+void ImageDisplayWidget::zoomIn()
+{
+    zoomFactor *= 1.1;
+    if (zoomFactor > maxZoomFactor) {
+        zoomFactor = maxZoomFactor;
+    }
+    zoomSlider->setValue(static_cast<int>(zoomFactor * 100));
+    displayPixmap();
+}
+
+void ImageDisplayWidget::zoomOut()
+{
+    zoomFactor /= 1.1;
+    if (zoomFactor < minZoomFactor) {
+        zoomFactor = minZoomFactor;
+    }
+    zoomSlider->setValue(static_cast<int>(zoomFactor * 100));
+    displayPixmap();
+}
+
+void ImageDisplayWidget::onZoomSliderValueChanged(int value)
+{
+    zoomFactor = value / 100.0;
+    if (zoomFactor < minZoomFactor) {
+        zoomFactor = minZoomFactor;
+    } else if (zoomFactor > maxZoomFactor) {
+        zoomFactor = maxZoomFactor;
+    }
+    displayPixmap();
+}
+
+void ImageDisplayWidget::displayPixmap()
+{
+    if (!currentPixmap.isNull())
+    {
+        QPixmap scaledPixmap = currentPixmap.scaled(currentPixmap.size() * zoomFactor, Qt::KeepAspectRatio);
+        imageLabel->setPixmap(scaledPixmap);
+        imageLabel->adjustSize();
+    }
 }

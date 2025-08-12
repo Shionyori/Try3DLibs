@@ -19,9 +19,6 @@ MainWindow::MainWindow(QWidget *parent)
     setupToolBar();
     createDocks();
     createCentralWidget();
-
-    // 测试图片加载
-    imageDisplayWidget->loadAndDisplayImage(".\\..\\..\\res\\TestImage-Chan.png");
 }
 
 MainWindow::~MainWindow() {}
