@@ -15,7 +15,7 @@ find_package(Qt6 REQUIRED COMPONENTS
     OpenGLWidgets
 )
 
-find_package(VTK REQUIRED COMPONENTS 
+find_package(VTK 9.5 REQUIRED COMPONENTS 
     CommonCore
     CommonDataModel
     FiltersCore

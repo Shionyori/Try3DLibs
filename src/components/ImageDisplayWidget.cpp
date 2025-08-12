@@ -5,6 +5,9 @@ ImageDisplayWidget::ImageDisplayWidget(QWidget *parent)
     : QWidget(parent), zoomFactor(1.0), minZoomFactor(0.1), maxZoomFactor(2.0)
 {
     setupUI();
+
+    //测试图片显示
+    loadAndDisplayImage(".\\..\\..\\res\\TestImage-Chan.png");
 }
 
 void ImageDisplayWidget::setupUI()
@@ -60,6 +63,16 @@ void ImageDisplayWidget::setupUI()
     setLayout(mainLayout);
 }
 
+void ImageDisplayWidget::displayPixmap()
+{
+    if (!currentPixmap.isNull())
+    {
+        QPixmap scaledPixmap = currentPixmap.scaled(currentPixmap.size() * zoomFactor, Qt::KeepAspectRatio);
+        imageLabel->setPixmap(scaledPixmap);
+        imageLabel->adjustSize();
+    }
+}
+
 void ImageDisplayWidget::loadAndDisplayImage(const QString &filePath)
 {
     originalImage = cv::imread(filePath.toStdString());
@@ -67,17 +80,6 @@ void ImageDisplayWidget::loadAndDisplayImage(const QString &filePath)
     {
         cvtColor(originalImage, originalImage, cv::COLOR_BGR2RGB);
         QImage qImage(originalImage.data, originalImage.cols, originalImage.rows, originalImage.step, QImage::Format_RGB888);
-        currentPixmap = QPixmap::fromImage(qImage);
-        displayPixmap();
-    }
-}
-
-void ImageDisplayWidget::convertToGrayscale()
-{
-    if (!originalImage.empty())
-    {
-        cv::cvtColor(originalImage, grayscaleImage, cv::COLOR_RGB2GRAY);
-        QImage qImage(grayscaleImage.data, grayscaleImage.cols, grayscaleImage.rows, grayscaleImage.step, QImage::Format_Grayscale8);
         currentPixmap = QPixmap::fromImage(qImage);
         displayPixmap();
     }
@@ -114,12 +116,13 @@ void ImageDisplayWidget::onZoomSliderValueChanged(int value)
     displayPixmap();
 }
 
-void ImageDisplayWidget::displayPixmap()
+void ImageDisplayWidget::convertToGrayscale()
 {
-    if (!currentPixmap.isNull())
+    if (!originalImage.empty())
     {
-        QPixmap scaledPixmap = currentPixmap.scaled(currentPixmap.size() * zoomFactor, Qt::KeepAspectRatio);
-        imageLabel->setPixmap(scaledPixmap);
-        imageLabel->adjustSize();
+        cv::cvtColor(originalImage, grayscaleImage, cv::COLOR_RGB2GRAY);
+        QImage qImage(grayscaleImage.data, grayscaleImage.cols, grayscaleImage.rows, grayscaleImage.step, QImage::Format_Grayscale8);
+        currentPixmap = QPixmap::fromImage(qImage);
+        displayPixmap();
     }
 }

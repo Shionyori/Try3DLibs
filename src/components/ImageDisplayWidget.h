@@ -36,6 +36,7 @@ private:
     QPushButton *zoomInButton;
     QPushButton *zoomOutButton;
     QSlider *zoomSlider;
+    
     cv::Mat originalImage;
     cv::Mat grayscaleImage;
     QPixmap currentPixmap;
