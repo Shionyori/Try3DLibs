@@ -19,6 +19,10 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+private slots:
+    void openFile();  // 新增槽函数
+    void handleFileChecked(const QString& filePath, bool checked);  // 新增槽函数
+
 private:
     ElementListDock* elementListDock;
     FileListDock* fileListDock;

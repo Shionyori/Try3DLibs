@@ -32,6 +32,7 @@ void MainWindow::setupMenu()
     menuBar->addMenu(fileMenu);
 
     QAction* openAction = new QAction("Open", this);
+    connect(openAction, &QAction::triggered, this, &MainWindow::openFile);
     QAction* saveAction = new QAction("Save", this);
     fileMenu->addAction(openAction);
     fileMenu->addAction(saveAction);
@@ -78,6 +79,8 @@ void MainWindow::createDocks()
     addDockWidget(Qt::BottomDockWidgetArea, operationButtonDock);
 
     setCorner(Qt::BottomLeftCorner, Qt::LeftDockWidgetArea);
+
+    connect(fileListDock, &FileListDock::fileChecked, this, &MainWindow::handleFileChecked);
 }
 
 void MainWindow::createCentralWidget()
@@ -94,4 +97,28 @@ void MainWindow::createCentralWidget()
     centralSplitter->setSizes({500, 500});
 
     setCentralWidget(centralSplitter);
+}
+
+void MainWindow::openFile()
+{
+    QString filePath = QFileDialog::getOpenFileName(
+        this,
+        "Open Point Cloud",
+        "",
+        "Point Cloud Files (*.pcd *.ply *.obj *.stl)"
+    );
+    
+    if (!filePath.isEmpty()) {
+        // 添加到文件列表
+        fileListDock->addFile(filePath);
+    }
+}
+
+void MainWindow::handleFileChecked(const QString& filePath, bool checked)
+{
+    if (checked) {
+        vtkDisplayWidget->displayPointCloud(filePath);
+    } else {
+        vtkDisplayWidget->removePointCloud(filePath);
+    }
 }

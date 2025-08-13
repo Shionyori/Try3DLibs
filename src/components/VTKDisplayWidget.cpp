@@ -29,9 +29,7 @@ VTKDisplayWidget::VTKDisplayWidget(QWidget* parent)
 
     renderWindow->AddRenderer(renderer);
 
-    //测试点云显示
-    displayPointCloud(".\\..\\..\\res\\Test-Cat.pcd");
-    //测试锥体显示
+    // 默认显示测试锥体
     displayCone();
 
     setupCamera();
@@ -52,10 +50,16 @@ void VTKDisplayWidget::displayCone()
     actor->SetMapper(mapper);
 
     renderer->AddActor(actor);
+    
+    renderWindow->Render();
 }
 
 void VTKDisplayWidget::displayPointCloud(const QString& filePath)
 {
+     if (pointCloudActors.contains(filePath)) {
+        removePointCloud(filePath);
+    }
+
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
     if (pcl::io::loadPCDFile<pcl::PointXYZ>(filePath.toStdString(), *cloud) == -1)
     {
@@ -86,6 +90,22 @@ void VTKDisplayWidget::displayPointCloud(const QString& filePath)
     actor->GetProperty()->SetColor(1.0, 1.0, 1.0);  // 设置点云为白色
 
     renderer->AddActor(actor);
+
+    // 存储actor并添加到渲染器
+    pointCloudActors[filePath] = actor;
+    renderer->AddActor(actor);
+    
+    // 刷新渲染
+    renderWindow->Render();
+}
+
+void VTKDisplayWidget::removePointCloud(const QString& filePath)
+{
+    if (pointCloudActors.contains(filePath)) {
+        renderer->RemoveActor(pointCloudActors[filePath]);
+        pointCloudActors.remove(filePath);
+        renderWindow->Render(); 
+    }
 }
 
 void VTKDisplayWidget::setupCamera()
