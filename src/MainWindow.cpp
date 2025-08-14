@@ -14,6 +14,12 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
+    // 加载QSS文件
+    QFile styleFile(":res/lightStyle.qss");
+    styleFile.open(QFile::ReadOnly);
+    QString styleSheet = QLatin1String(styleFile.readAll());
+    setStyleSheet(styleSheet);
+
     setGeometry(150, 75, 1400, 900);
     setupMenu();
     setupToolBar();
@@ -32,16 +38,15 @@ void MainWindow::setupMenu()
     menuBar->addMenu(fileMenu);
 
     QAction* openAction = new QAction("Open", this);
-    connect(openAction, &QAction::triggered, this, &MainWindow::openFile);
     QAction* saveAction = new QAction("Save", this);
+
     fileMenu->addAction(openAction);
     fileMenu->addAction(saveAction);
+    
+    openAction->setShortcut(QKeySequence("Ctrl+O"));
+    saveAction->setShortcut(QKeySequence("Ctrl+S"));
 
-    menuBar->setStyleSheet(
-        "QMenuBar { background-color: #333; color: white; }"
-        "QMenu { background-color: #555; color: white; }"
-        "QMenu::item:selected { background-color: #777; }"
-    );
+    connect(openAction, &QAction::triggered, this, &MainWindow::openFile);
 }
 
 void MainWindow::setupToolBar()
@@ -52,12 +57,6 @@ void MainWindow::setupToolBar()
 
     toolBar->addAction(new QAction("ToolA", this));
     toolBar->addAction(new QAction("ToolB", this));
-
-    toolBar->setStyleSheet(
-        "QToolBar { background-color: #444; color: white; }"
-        "QToolBar QToolButton { background-color: #666; color: white; }"
-        "QToolBar QToolButton:hover { background-color: #888; }"
-    );
 }
 
 void MainWindow::createDocks()

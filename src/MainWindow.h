@@ -20,8 +20,8 @@ public:
     ~MainWindow();
 
 private slots:
-    void openFile();  // 新增槽函数
-    void handleFileChecked(const QString& filePath, bool checked);  // 新增槽函数
+    void openFile();  
+    void handleFileChecked(const QString& filePath, bool checked);
 
 private:
     ElementListDock* elementListDock;

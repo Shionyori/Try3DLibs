@@ -38,6 +38,8 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 file(GLOB_RECURSE PROJECT_SOURCES 
     src/*.cpp
     src/*.h
+    res/*.qrc
+    res/*.qss
 )
 
 qt_add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${PROJECT_SOURCES})
