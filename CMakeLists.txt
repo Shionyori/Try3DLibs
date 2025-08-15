@@ -51,6 +51,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     ${VTK_LIBRARIES}
 )
 
-set_target_properties(${YOUR_TARGET} PROPERTIES
+set_target_properties(${PROJECT_NAME} PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
