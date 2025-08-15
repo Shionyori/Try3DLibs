@@ -14,8 +14,11 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
+    //设置窗口图标
+    QIcon icon(":res/icons/app_icon.png");
+    setWindowIcon(icon);
     // 加载QSS文件
-    QFile styleFile(":res/lightStyle.qss");
+    QFile styleFile(":res/styles/lightStyle.qss");
     styleFile.open(QFile::ReadOnly);
     QString styleSheet = QLatin1String(styleFile.readAll());
     setStyleSheet(styleSheet);
