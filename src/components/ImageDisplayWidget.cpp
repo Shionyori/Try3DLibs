@@ -7,7 +7,7 @@ ImageDisplayWidget::ImageDisplayWidget(QWidget *parent)
     setupUI();
 
     //测试图片显示
-    loadAndDisplayImage(".\\..\\..\\res\\TestImage-Chan.png");
+    loadAndDisplayImage("res\\TestImage-Chan.png");
 }
 
 void ImageDisplayWidget::setupUI()
