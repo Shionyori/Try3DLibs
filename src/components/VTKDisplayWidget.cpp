@@ -117,3 +117,38 @@ void VTKDisplayWidget::setupCamera()
     renderer->SetBackground(0.2, 0.3, 0.4);  // 设置背景颜色
     renderWindow->Render();  // 渲染窗口
 }
+
+void VTKDisplayWidget::displayCircle(double centerX, double centerY, double radius)
+{
+    QString circleName = QString("Circle %1: Center (%2, %3), Radius %4")
+                         .arg(circleActors.size() + 1).arg(centerX).arg(centerY).arg(radius);
+
+    if (circleActors.contains(circleName)) {
+        renderer->RemoveActor(circleActors[circleName]);
+    }
+
+    vtkSmartPointer<vtkSphereSource> sphereSource = vtkSmartPointer<vtkSphereSource>::New();
+    sphereSource->SetCenter(centerX, centerY, 0);
+    sphereSource->SetRadius(radius);
+    sphereSource->Update();
+
+    vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+    mapper->SetInputConnection(sphereSource->GetOutputPort());
+
+    vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
+    actor->SetMapper(mapper);
+    actor->GetProperty()->SetColor(1.0, 1.0, 1.0); // 设置颜色为红色
+
+    renderer->AddActor(actor);
+    circleActors[circleName] = actor;
+    renderWindow->Render();
+}
+
+void VTKDisplayWidget::removeCircle(const QString& circleName)
+{
+    if (circleActors.contains(circleName)) {
+        renderer->RemoveActor(circleActors[circleName]);
+        circleActors.remove(circleName);
+        renderWindow->Render();
+    }
+}
