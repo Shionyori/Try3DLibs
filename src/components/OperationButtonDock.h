@@ -1,4 +1,4 @@
-// src/components/OperationButtonDock.h
+// OperationButtonDock.h
 #ifndef OPERATIONBUTTONDOCK_H
 #define OPERATIONBUTTONDOCK_H
 
@@ -13,6 +13,14 @@ class OperationButtonDock : public QDockWidget
 
 public:
     OperationButtonDock(QWidget *parent = nullptr);
+    
+    QPushButton* getDetectCirclesButton() { return detectCirclesButton; }
+
+signals:
+    void detectCirclesRequested();
+
+private:
+    QPushButton* detectCirclesButton;
 };
 
 #endif // OPERATIONBUTTONDOCK_H

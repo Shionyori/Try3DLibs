@@ -29,9 +29,6 @@ VTKDisplayWidget::VTKDisplayWidget(QWidget* parent)
 
     renderWindow->AddRenderer(renderer);
 
-    // 默认显示测试锥体
-    displayCone();
-
     setupCamera();
 }
 
@@ -118,29 +115,46 @@ void VTKDisplayWidget::setupCamera()
     renderWindow->Render();  // 渲染窗口
 }
 
-void VTKDisplayWidget::displayCircle(double centerX, double centerY, double radius)
+void VTKDisplayWidget::displayCircle(const QString& name, double centerX, double centerY, double radius)
 {
-    QString circleName = QString("Circle %1: Center (%2, %3), Radius %4")
-                         .arg(circleActors.size() + 1).arg(centerX).arg(centerY).arg(radius);
+    if (circleActors.contains(name)) {
+        // 更新现有圆形
+        vtkSmartPointer<vtkRegularPolygonSource> circleSource = 
+            vtkSmartPointer<vtkRegularPolygonSource>::New();
+        circleSource->SetNumberOfSides(50);
+        circleSource->SetRadius(radius);
+        circleSource->SetCenter(centerX, centerY, 0);
+        circleSource->SetNormal(0, 0, 1);
+        circleSource->Update();
+        
+        vtkSmartPointer<vtkPolyDataMapper> mapper = 
+            vtkSmartPointer<vtkPolyDataMapper>::New();
+        mapper->SetInputConnection(circleSource->GetOutputPort());
+        
+        circleActors[name]->SetMapper(mapper);
+    } else {
+        // 创建新圆形
+        vtkSmartPointer<vtkRegularPolygonSource> circleSource = 
+            vtkSmartPointer<vtkRegularPolygonSource>::New();
+        circleSource->SetNumberOfSides(50);
+        circleSource->SetRadius(radius);
+        circleSource->SetCenter(centerX, centerY, 0);
+        circleSource->SetNormal(0, 0, 1);
+        circleSource->Update();
 
-    if (circleActors.contains(circleName)) {
-        renderer->RemoveActor(circleActors[circleName]);
+        vtkSmartPointer<vtkPolyDataMapper> mapper = 
+            vtkSmartPointer<vtkPolyDataMapper>::New();
+        mapper->SetInputConnection(circleSource->GetOutputPort());
+
+        vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
+        actor->SetMapper(mapper);
+        actor->GetProperty()->SetColor(1.0, 1.0, 1.0);
+        actor->GetProperty()->SetLineWidth(2);
+
+        renderer->AddActor(actor);
+        circleActors[name] = actor;
     }
-
-    vtkSmartPointer<vtkSphereSource> sphereSource = vtkSmartPointer<vtkSphereSource>::New();
-    sphereSource->SetCenter(centerX, centerY, 0);
-    sphereSource->SetRadius(radius);
-    sphereSource->Update();
-
-    vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-    mapper->SetInputConnection(sphereSource->GetOutputPort());
-
-    vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
-    actor->SetMapper(mapper);
-    actor->GetProperty()->SetColor(1.0, 1.0, 1.0); // 设置颜色为红色
-
-    renderer->AddActor(actor);
-    circleActors[circleName] = actor;
+    
     renderWindow->Render();
 }
 
@@ -149,6 +163,14 @@ void VTKDisplayWidget::removeCircle(const QString& circleName)
     if (circleActors.contains(circleName)) {
         renderer->RemoveActor(circleActors[circleName]);
         circleActors.remove(circleName);
+        renderWindow->Render();
+    }
+}
+
+void VTKDisplayWidget::setCircleVisible(const QString& circleName, bool visible)
+{
+    if (circleActors.contains(circleName)) {
+        circleActors[circleName]->SetVisibility(visible ? 1 : 0);
         renderWindow->Render();
     }
 }

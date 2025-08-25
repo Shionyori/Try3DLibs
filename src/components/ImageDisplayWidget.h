@@ -1,3 +1,4 @@
+// ImageDisplayWidget.h
 #ifndef IMAGEDISPLAYWIDGET_H
 #define IMAGEDISPLAYWIDGET_H
 
@@ -10,8 +11,8 @@
 #include <QPixmap>
 #include <QScrollArea>
 #include <QSlider>
+#include <QMouseEvent>
 #include <opencv2/opencv.hpp>
-#include <QComboBox> // 添加下拉菜单
 
 #include "ElementListDock.h"
 
@@ -26,14 +27,18 @@ public:
     void convertToGrayscale();
     void detectShapes();
     void detectCircles();
+    void setCircleDetectionMode(bool enabled);
 
 signals:
-    void circleDetected(double centerX, double centerY, double radius);
+    void circleDetected(QString name, double centerX, double centerY, double radius);
 
 private slots:
     void zoomIn();
     void zoomOut();
     void onZoomSliderValueChanged(int value);
+
+protected:
+    void mousePressEvent(QMouseEvent *event) override;
 
 private:
     QScrollArea *scrollArea;
@@ -53,9 +58,14 @@ private:
     double zoomFactor;
     double minZoomFactor;
     double maxZoomFactor;
+    
+    bool circleDetectionMode;
+    QPoint lastClickPos;
 
     void setupUI();
     void displayPixmap();
+    void detectCirclesNearPoint(const QPoint &point);
+    void drawSniperScope(cv::Mat &image, const cv::Point &center, int radius);
 
     ElementListDock* elementListDock;
 };

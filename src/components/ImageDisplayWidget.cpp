@@ -217,3 +217,139 @@ void ImageDisplayWidget::detectCircles()
     currentPixmap = QPixmap::fromImage(qImage);
     displayPixmap();
 }
+
+void ImageDisplayWidget::setCircleDetectionMode(bool enabled)
+{
+    circleDetectionMode = enabled;
+    if (enabled) {
+        setCursor(Qt::CrossCursor);
+        QMessageBox::information(this, "Circle Detection", "Click on the image to detect circles near that point.");
+    } else {
+        setCursor(Qt::ArrowCursor);
+    }
+}
+
+void ImageDisplayWidget::mousePressEvent(QMouseEvent *event)
+{
+    if (circleDetectionMode && event->button() == Qt::LeftButton) {
+        // 获取点击位置在图像上的坐标（考虑缩放和滚动）
+        QPoint imagePos = event->pos();
+        QPoint scrollPos = scrollArea->widget()->mapFromParent(imagePos);
+        
+        // 调整坐标以考虑缩放
+        QPoint adjustedPos(
+            static_cast<int>(scrollPos.x() / zoomFactor),
+            static_cast<int>(scrollPos.y() / zoomFactor)
+        );
+        
+        detectCirclesNearPoint(adjustedPos);
+    } else {
+        QWidget::mousePressEvent(event);
+    }
+}
+
+void ImageDisplayWidget::detectCirclesNearPoint(const QPoint &point)
+{
+    if (originalImage.empty()) {
+        QMessageBox::warning(this, "Warning", "No image loaded!");
+        return;
+    }
+
+    // 定义检测区域（以点击点为中心的正方形区域）
+    int regionSize = 200; // 区域大小
+    int x = std::max(0, point.x() - regionSize/2);
+    int y = std::max(0, point.y() - regionSize/2);
+    int width = std::min(regionSize, originalImage.cols - x);
+    int height = std::min(regionSize, originalImage.rows - y);
+    
+    if (width <= 0 || height <= 0) return;
+    
+    // 提取感兴趣区域
+    cv::Mat roi = originalImage(cv::Rect(x, y, width, height));
+    
+    // 转换为灰度图
+    cv::Mat grayRoi;
+    cv::cvtColor(roi, grayRoi, cv::COLOR_BGR2GRAY);
+    
+    // 高斯模糊
+    cv::GaussianBlur(grayRoi, grayRoi, cv::Size(9, 9), 2, 2);
+    
+    // 霍夫圆检测
+    std::vector<cv::Vec3f> circles;
+    cv::HoughCircles(grayRoi, circles, cv::HOUGH_GRADIENT, 1, 
+                    grayRoi.rows/8, 200, 100, 0, 0);
+    
+    if (circles.empty()) {
+        QMessageBox::information(this, "No Circles", "No circles detected near the clicked point.");
+        return;
+    }
+    
+    // 找到最接近点击点的圆
+    int closestCircleIdx = 0;
+    double minDistance = std::numeric_limits<double>::max();
+    
+    for (size_t i = 0; i < circles.size(); i++) {
+        cv::Vec3f c = circles[i];
+        double circleX = c[0] + x;
+        double circleY = c[1] + y;
+        double distance = std::sqrt(std::pow(circleX - point.x(), 2) + 
+                                   std::pow(circleY - point.y(), 2));
+        
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestCircleIdx = i;
+        }
+    }
+    
+    cv::Vec3f c = circles[closestCircleIdx];
+    double centerX = c[0] + x;
+    double centerY = c[1] + y;
+    double radius = c[2];
+    
+    // 在原始图像上绘制狙击镜标识
+    cv::Mat resultImage = originalImage.clone();
+    drawSniperScope(resultImage, cv::Point(centerX, centerY), radius);
+    
+    // 显示结果图像
+    QImage qImage(resultImage.data, resultImage.cols, resultImage.rows, resultImage.step, QImage::Format_BGR888);
+    currentPixmap = QPixmap::fromImage(qImage);
+    displayPixmap();
+    
+    // 添加到元素列表
+    QString circleName = QString("Circle %1: Center (%2, %3), Radius %4")
+                         .arg(elementListDock->getTreeWidget()->topLevelItemCount() + 1)
+                         .arg(centerX).arg(centerY).arg(radius);
+    elementListDock->addCircleElement(circleName, true);
+    
+    // 发出信号通知VTK显示圆形
+    emit circleDetected(circleName, centerX, centerY, radius);
+    
+    // 退出检测模式
+    setCircleDetectionMode(false);
+}
+
+void ImageDisplayWidget::drawSniperScope(cv::Mat &image, const cv::Point &center, int radius)
+{
+    // 绘制外圆
+    cv::circle(image, center, radius, cv::Scalar(0, 255, 0), 2);
+    
+    // 绘制十字准线
+    int lineLength = radius + 20;
+    cv::line(image, 
+             cv::Point(center.x - lineLength, center.y),
+             cv::Point(center.x + lineLength, center.y),
+             cv::Scalar(0, 255, 0), 2);
+    cv::line(image, 
+             cv::Point(center.x, center.y - lineLength),
+             cv::Point(center.x, center.y + lineLength),
+             cv::Scalar(0, 255, 0), 2);
+    
+    // 绘制内圆
+    cv::circle(image, center, 5, cv::Scalar(0, 0, 255), 2);
+    
+    // 添加文本标注
+    std::string text = "R: " + std::to_string(radius);
+    cv::putText(image, text, 
+                cv::Point(center.x + radius + 5, center.y),
+                cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
+}

@@ -29,6 +29,7 @@ MainWindow::MainWindow(QWidget *parent)
     setupToolBar();
     createDocks();
     createCentralWidget();
+    setupConnection();
 }
 
 MainWindow::~MainWindow() {}
@@ -82,9 +83,6 @@ void MainWindow::createDocks()
     addDockWidget(Qt::BottomDockWidgetArea, operationButtonDock);
 
     setCorner(Qt::BottomLeftCorner, Qt::LeftDockWidgetArea);
-
-    connect(fileListDock, &FileListDock::fileChecked, this, &MainWindow::handleFileChecked);
-    connect(elementListDock, &ElementListDock::elementChecked, this, &MainWindow::handleElementChecked);
 }
 
 void MainWindow::createCentralWidget()
@@ -101,6 +99,30 @@ void MainWindow::createCentralWidget()
     centralSplitter->setSizes({500, 500});
 
     setCentralWidget(centralSplitter);
+}
+
+void MainWindow::setupConnection()
+{
+    // 连接操作按钮的信号
+    connect(operationButtonDock, &OperationButtonDock::detectCirclesRequested, 
+            this, [this]() {
+                imageDisplayWidget->setCircleDetectionMode(true);
+            });
+    
+    // 连接圆形检测信号
+    connect(imageDisplayWidget, &ImageDisplayWidget::circleDetected,
+            vtkDisplayWidget, &VTKDisplayWidget::displayCircle);
+
+    connect(fileListDock, &FileListDock::fileChecked, this, &MainWindow::handleFileChecked);
+    connect(elementListDock, &ElementListDock::elementChecked, this, &MainWindow::handleElementChecked);
+
+    // 连接元素列表的复选框状态变化
+    connect(elementListDock, &ElementListDock::elementCheckedByName,
+            this, [this](const QString& name, bool checked) {
+                if (vtkDisplayWidget) {
+                    vtkDisplayWidget->setCircleVisible(name, checked);
+                }
+            });
 }
 
 void MainWindow::openFile()
@@ -132,18 +154,22 @@ void MainWindow::handleElementChecked(int index, bool checked)
     QTreeWidgetItem* item = elementListDock->getTreeWidget()->topLevelItem(index);
     if (item) {
         QString elementName = item->text(0);
-        if (checked) {
-            // 解析圆形参数
-            QRegularExpression re(R"(Circle \d+: Center \((\d+), (\d+)\), Radius (\d+))");
-            QRegularExpressionMatch match = re.match(elementName);
-            if (match.hasMatch()) {
-                double centerX = match.captured(1).toDouble();
-                double centerY = match.captured(2).toDouble();
-                double radius = match.captured(3).toDouble();
-                vtkDisplayWidget->displayCircle(centerX, centerY, radius);
+        // 发射按名称检查的信号
+        emit elementListDock->elementCheckedByName(elementName, checked);
+        
+        // 原有的处理逻辑（可选保留）
+        QRegularExpression re(R"(Circle \d+: Center \((\d+), (\d+)\), Radius (\d+))");
+        QRegularExpressionMatch match = re.match(elementName);
+        if (match.hasMatch()) {
+            double centerX = match.captured(1).toDouble();
+            double centerY = match.captured(2).toDouble();
+            double radius = match.captured(3).toDouble();
+            
+            if (checked) {
+                vtkDisplayWidget->displayCircle(elementName, centerX, centerY, radius);
+            } else {
+                vtkDisplayWidget->removeCircle(elementName);
             }
-        } else {
-            vtkDisplayWidget->removeCircle(elementName);
         }
     }
 }

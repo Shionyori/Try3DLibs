@@ -15,9 +15,11 @@ public:
     ElementListDock(QWidget *parent = nullptr);
     QTreeWidget* getTreeWidget() {return treeWidget;}
     void addCircleElement(const QString& name, bool checked = false);
-
+    void setElementChecked(int index, bool checked); // 新增方法
+    
 signals:
-    void elementChecked(int index, bool checked); // 通知其他组件元素的选中状态变化
+    void elementChecked(int index, bool checked);
+    void elementCheckedByName(const QString& name, bool checked); // 新增信号
 
 private:
     QTreeWidget* treeWidget;

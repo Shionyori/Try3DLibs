@@ -1,3 +1,4 @@
+// VTKDisplayWidget.h
 #ifndef VTKDISPLAYWIDGET_H
 #define VTKDISPLAYWIDGET_H
 
@@ -5,6 +6,7 @@
 #include <QVTKOpenGLNativeWidget.h>
 #include <vtkSmartPointer.h>
 #include <vtkActor.h>
+#include <vtkRegularPolygonSource.h> // 添加这行
 #include <QMap>
 
 class VTKDisplayWidget : public QWidget
@@ -20,8 +22,9 @@ public:
     void removePointCloud(const QString& filePath);
     
 public slots:
-    void displayCircle(double centerX, double centerY, double radius);
+    void displayCircle(const QString& name, double centerX, double centerY, double radius);
     void removeCircle(const QString& circleName);
+    void setCircleVisible(const QString& circleName, bool visible); // 新增方法
 
 private:
     QVTKOpenGLNativeWidget* vtkWidget;

@@ -20,10 +20,22 @@ ElementListDock::ElementListDock(QWidget *parent)
     setWidget(treeWidget);
 }
 
+void ElementListDock::setElementChecked(int index, bool checked)
+{
+    QTreeWidgetItem* item = treeWidget->topLevelItem(index);
+    if (item) {
+        // 阻塞信号避免循环触发
+        treeWidget->blockSignals(true);
+        item->setCheckState(1, checked ? Qt::Checked : Qt::Unchecked);
+        treeWidget->blockSignals(false);
+    }
+}
+
 void ElementListDock::addCircleElement(const QString& name, bool checked)
 {
     QTreeWidgetItem* item = new QTreeWidgetItem(treeWidget);
     item->setText(0, name);
     item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
     item->setCheckState(1, checked ? Qt::Checked : Qt::Unchecked);
+    treeWidget->addTopLevelItem(item);
 }

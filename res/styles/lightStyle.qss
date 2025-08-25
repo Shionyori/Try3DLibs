@@ -186,6 +186,14 @@ QScrollArea {
 /* 标签 */
 QLabel {
     background-color: transparent;
+    font-family: 'Consolas', 'Courier New', monospace;
+    color: #3a3f46;
+}
+
+QMessageBox {
+    background-color: #ffffff;
+    font-family: 'Consolas', 'Courier New', monospace;
+    color: #3a3f46;
 }
 
 /* 滑块 - 灰色调 */

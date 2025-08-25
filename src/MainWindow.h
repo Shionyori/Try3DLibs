@@ -36,6 +36,7 @@ private:
     void setupToolBar();
     void createDocks();
     void createCentralWidget();
+    void setupConnection();
 };
 
 #endif // MAINWINDOW_H
