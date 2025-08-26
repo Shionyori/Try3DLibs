@@ -59,7 +59,7 @@ private:
     double minZoomFactor;
     double maxZoomFactor;
     
-    bool circleDetectionMode;
+    bool circleDetectionMode = false;
     QPoint lastClickPos;
 
     void setupUI();

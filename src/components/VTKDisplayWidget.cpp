@@ -10,6 +10,7 @@
 #include <vtkCamera.h>
 
 #include <vtkConeSource.h>
+#include <QVector3D>
 
 #include <pcl/point_types.h>
 #include <pcl/io/pcd_io.h>
@@ -30,6 +31,7 @@ VTKDisplayWidget::VTKDisplayWidget(QWidget* parent)
     renderWindow->AddRenderer(renderer);
 
     setupCamera();
+    setupAxesWidget();
 }
 
 void VTKDisplayWidget::displayCone()
@@ -107,53 +109,76 @@ void VTKDisplayWidget::removePointCloud(const QString& filePath)
 
 void VTKDisplayWidget::setupCamera()
 {
-    renderer->ResetCamera();  // 重置相机位置
-    renderer->GetActiveCamera()->SetPosition(30, 30, 30);  // 将相机移远
-    renderer->GetActiveCamera()->SetFocalPoint(0, 0, 0);  // 设置焦点位置
-    renderer->GetActiveCamera()->SetViewUp(0, 1, 0);  // 设置视图方向
-    renderer->SetBackground(0.2, 0.3, 0.4);  // 设置背景颜色
-    renderWindow->Render();  // 渲染窗口
+    // 设置相机位置
+    renderer->GetActiveCamera()->SetPosition(250, 250, 1500);  // 相机位于区域中心上方
+    renderer->GetActiveCamera()->SetFocalPoint(250, 250, 0);   // 焦点位于区域中心
+    renderer->GetActiveCamera()->SetViewUp(0, 1, 0);           // 设置视图向上方向
+    renderer->SetBackground(1.0, 1.0, 1.0);
+
+    renderer->ResetCamera();
+
+    renderWindow->Render();
 }
 
 void VTKDisplayWidget::displayCircle(const QString& name, double centerX, double centerY, double radius)
 {
     if (circleActors.contains(name)) {
         // 更新现有圆形
-        vtkSmartPointer<vtkRegularPolygonSource> circleSource = 
-            vtkSmartPointer<vtkRegularPolygonSource>::New();
-        circleSource->SetNumberOfSides(50);
-        circleSource->SetRadius(radius);
-        circleSource->SetCenter(centerX, centerY, 0);
-        circleSource->SetNormal(0, 0, 1);
-        circleSource->Update();
-        
-        vtkSmartPointer<vtkPolyDataMapper> mapper = 
-            vtkSmartPointer<vtkPolyDataMapper>::New();
-        mapper->SetInputConnection(circleSource->GetOutputPort());
-        
-        circleActors[name]->SetMapper(mapper);
-    } else {
-        // 创建新圆形
-        vtkSmartPointer<vtkRegularPolygonSource> circleSource = 
-            vtkSmartPointer<vtkRegularPolygonSource>::New();
-        circleSource->SetNumberOfSides(50);
-        circleSource->SetRadius(radius);
-        circleSource->SetCenter(centerX, centerY, 0);
-        circleSource->SetNormal(0, 0, 1);
-        circleSource->Update();
-
-        vtkSmartPointer<vtkPolyDataMapper> mapper = 
-            vtkSmartPointer<vtkPolyDataMapper>::New();
-        mapper->SetInputConnection(circleSource->GetOutputPort());
-
-        vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
-        actor->SetMapper(mapper);
-        actor->GetProperty()->SetColor(1.0, 1.0, 1.0);
-        actor->GetProperty()->SetLineWidth(2);
-
-        renderer->AddActor(actor);
-        circleActors[name] = actor;
+        removeCircle(name);
     }
+    
+    // 创建圆上的点集
+    auto points = vtkSmartPointer<vtkPoints>::New();
+    const int numPoints = 100; // 圆的点数，更多点数会更平滑
+    
+    // 法向量固定为Z轴方向 (0, 0, 1)
+    QVector3D normalVec(0, 0, 1);
+    
+    // 创建一个与法向量正交的向量
+    QVector3D v1(1, 0, 0);
+    if (fabs(QVector3D::dotProduct(v1, normalVec)) > 0.99) {
+        v1 = QVector3D(0, 1, 0);
+    }
+    QVector3D v2 = QVector3D::crossProduct(normalVec, v1).normalized();
+    v1 = QVector3D::crossProduct(v2, normalVec).normalized();
+    
+    for (int i = 0; i < numPoints; ++i) {
+        double theta = 2.0 * vtkMath::Pi() * static_cast<double>(i) / static_cast<double>(numPoints);
+        double x = centerX + radius * (v1.x() * cos(theta) + v2.x() * sin(theta));
+        double y = centerY + radius * (v1.y() * cos(theta) + v2.y() * sin(theta));
+        double z = 0; // Z坐标设为0，因为我们是在XY平面上绘制
+        points->InsertNextPoint(x, y, z);
+    }
+    
+    // 创建一个线源来表示圆的线（多段线）
+    auto lines = vtkSmartPointer<vtkCellArray>::New();
+    vtkIdType pointIds[2];
+    for (int i = 0; i < numPoints - 1; ++i) {
+        pointIds[0] = i;
+        pointIds[1] = i + 1;
+        lines->InsertNextCell(2, pointIds);
+    }
+    // 闭环：将最后一个点与第一个点连接起来
+    pointIds[0] = numPoints - 1;
+    pointIds[1] = 0;
+    lines->InsertNextCell(2, pointIds);
+    
+    // 创建PolyData并设置点和线
+    auto polyData = vtkSmartPointer<vtkPolyData>::New();
+    polyData->SetPoints(points);
+    polyData->SetLines(lines);
+    
+    // 创建映射器和actor
+    auto mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+    mapper->SetInputData(polyData);
+    
+    auto actor = vtkSmartPointer<vtkActor>::New();
+    actor->SetMapper(mapper);
+    actor->GetProperty()->SetColor(0.0, 0.0, 0.0); // 黑色
+    actor->GetProperty()->SetLineWidth(2.0); // 线宽
+    
+    renderer->AddActor(actor);
+    circleActors[name] = actor;
     
     renderWindow->Render();
 }
@@ -173,4 +198,27 @@ void VTKDisplayWidget::setCircleVisible(const QString& circleName, bool visible)
         circleActors[circleName]->SetVisibility(visible ? 1 : 0);
         renderWindow->Render();
     }
+}
+
+void VTKDisplayWidget::setupAxesWidget()
+{
+    // 创建坐标轴actor
+    axesActor = vtkSmartPointer<vtkAxesActor>::New();
+    axesActor->SetShaftTypeToCylinder();
+    axesActor->SetXAxisLabelText("X");
+    axesActor->SetYAxisLabelText("Y");
+    axesActor->SetZAxisLabelText("Z");
+    axesActor->SetTotalLength(1.0, 1.0, 1.0);
+    axesActor->SetCylinderRadius(0.5 * axesActor->GetCylinderRadius());
+    axesActor->SetConeRadius(1.025 * axesActor->GetConeRadius());
+    axesActor->SetSphereRadius(1.5 * axesActor->GetSphereRadius());
+    
+    // 创建方向标记widget
+    axesWidget = vtkSmartPointer<vtkOrientationMarkerWidget>::New();
+    axesWidget->SetOutlineColor(0.9300, 0.5700, 0.1300);
+    axesWidget->SetOrientationMarker(axesActor);
+    axesWidget->SetInteractor(renderWindow->GetInteractor());
+    axesWidget->SetViewport(0.0, 0.0, 0.2, 0.2);  // 设置在左下角
+    axesWidget->SetEnabled(true);
+    axesWidget->InteractiveOff();  // 设置为非交互式
 }

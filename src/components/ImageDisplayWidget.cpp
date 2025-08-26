@@ -93,6 +93,7 @@ void ImageDisplayWidget::loadAndDisplayImage(const QString &filePath)
         cvtColor(originalImage, originalImage, cv::COLOR_BGR2RGB);
         QImage qImage(originalImage.data, originalImage.cols, originalImage.rows, originalImage.step, QImage::Format_RGB888);
         currentPixmap = QPixmap::fromImage(qImage);
+
         displayPixmap();
     }
 }
@@ -232,17 +233,34 @@ void ImageDisplayWidget::setCircleDetectionMode(bool enabled)
 void ImageDisplayWidget::mousePressEvent(QMouseEvent *event)
 {
     if (circleDetectionMode && event->button() == Qt::LeftButton) {
-        // 获取点击位置在图像上的坐标（考虑缩放和滚动）
-        QPoint imagePos = event->pos();
-        QPoint scrollPos = scrollArea->widget()->mapFromParent(imagePos);
+        // 获取点击位置相对于imageLabel的坐标
+        QPoint labelPos = imageLabel->mapFrom(this, event->pos());
         
-        // 调整坐标以考虑缩放
-        QPoint adjustedPos(
-            static_cast<int>(scrollPos.x() / zoomFactor),
-            static_cast<int>(scrollPos.y() / zoomFactor)
+        // 计算图像在label中的实际显示区域（考虑居中显示）
+        QPixmap currentPix = imageLabel->pixmap();
+        if (currentPix.isNull()) return;
+        
+        QSize labelSize = imageLabel->size();
+        QSize pixSize = currentPix.size();
+        
+        // 计算图像在label中的偏移（居中显示）
+        int xOffset = (labelSize.width() - pixSize.width()) / 2;
+        int yOffset = (labelSize.height() - pixSize.height()) / 2;
+        
+        // 检查点击是否在图像区域内
+        if (labelPos.x() < xOffset || labelPos.y() < yOffset ||
+            labelPos.x() >= xOffset + pixSize.width() ||
+            labelPos.y() >= yOffset + pixSize.height()) {
+            return; // 点击在图像区域外
+        }
+        
+        // 计算在图像上的实际坐标（考虑缩放）
+        QPoint imagePos(
+            static_cast<int>((labelPos.x() - xOffset) / zoomFactor),
+            static_cast<int>((labelPos.y() - yOffset) / zoomFactor)
         );
-        
-        detectCirclesNearPoint(adjustedPos);
+
+        detectCirclesNearPoint(imagePos);
     } else {
         QWidget::mousePressEvent(event);
     }
@@ -257,8 +275,8 @@ void ImageDisplayWidget::detectCirclesNearPoint(const QPoint &point)
 
     // 定义检测区域（以点击点为中心的正方形区域）
     int regionSize = 200; // 区域大小
-    int x = std::max(0, point.x() - regionSize/2);
-    int y = std::max(0, point.y() - regionSize/2);
+    int x = std::max(0, point.x() - regionSize / 2);
+    int y = std::max(0, point.y() - regionSize / 2);
     int width = std::min(regionSize, originalImage.cols - x);
     int height = std::min(regionSize, originalImage.rows - y);
     
@@ -277,7 +295,7 @@ void ImageDisplayWidget::detectCirclesNearPoint(const QPoint &point)
     // 霍夫圆检测
     std::vector<cv::Vec3f> circles;
     cv::HoughCircles(grayRoi, circles, cv::HOUGH_GRADIENT, 1, 
-                    grayRoi.rows/8, 200, 100, 0, 0);
+                    grayRoi.rows / 8, 200, 100, 0, 0);
     
     if (circles.empty()) {
         QMessageBox::information(this, "No Circles", "No circles detected near the clicked point.");
@@ -302,13 +320,13 @@ void ImageDisplayWidget::detectCirclesNearPoint(const QPoint &point)
     }
     
     cv::Vec3f c = circles[closestCircleIdx];
-    double centerX = c[0] + x;
-    double centerY = c[1] + y;
+    double imageX = c[0] + x;
+    double imageY = c[1] + y;
     double radius = c[2];
     
     // 在原始图像上绘制狙击镜标识
     cv::Mat resultImage = originalImage.clone();
-    drawSniperScope(resultImage, cv::Point(centerX, centerY), radius);
+    drawSniperScope(resultImage, cv::Point(imageX, imageY), radius);
     
     // 显示结果图像
     QImage qImage(resultImage.data, resultImage.cols, resultImage.rows, resultImage.step, QImage::Format_BGR888);
@@ -318,11 +336,16 @@ void ImageDisplayWidget::detectCirclesNearPoint(const QPoint &point)
     // 添加到元素列表
     QString circleName = QString("Circle %1: Center (%2, %3), Radius %4")
                          .arg(elementListDock->getTreeWidget()->topLevelItemCount() + 1)
-                         .arg(centerX).arg(centerY).arg(radius);
+                         .arg(imageX).arg(imageY).arg(radius);
     elementListDock->addCircleElement(circleName, true);
-    
+
+    // 处理图像坐标
+    double imageHeight = originalImage.rows;
+    double vtkX = imageX;
+    double vtkY = imageHeight - imageY;
+
     // 发出信号通知VTK显示圆形
-    emit circleDetected(circleName, centerX, centerY, radius);
+    emit circleDetected(circleName, vtkX, vtkY, radius);
     
     // 退出检测模式
     setCircleDetectionMode(false);
@@ -331,6 +354,7 @@ void ImageDisplayWidget::detectCirclesNearPoint(const QPoint &point)
 void ImageDisplayWidget::drawSniperScope(cv::Mat &image, const cv::Point &center, int radius)
 {
     // 绘制外圆
+    cv::circle(image, center, radius + 20, cv::Scalar(0, 255, 0), 2);
     cv::circle(image, center, radius, cv::Scalar(0, 255, 0), 2);
     
     // 绘制十字准线
@@ -347,9 +371,9 @@ void ImageDisplayWidget::drawSniperScope(cv::Mat &image, const cv::Point &center
     // 绘制内圆
     cv::circle(image, center, 5, cv::Scalar(0, 0, 255), 2);
     
-    // 添加文本标注
-    std::string text = "R: " + std::to_string(radius);
-    cv::putText(image, text, 
-                cv::Point(center.x + radius + 5, center.y),
-                cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
+    // // 添加文本标注
+    // std::string text = "R: " + std::to_string(radius);
+    // cv::putText(image, text, 
+    //             cv::Point(center.x + radius + 5, center.y),
+    //             cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
 }

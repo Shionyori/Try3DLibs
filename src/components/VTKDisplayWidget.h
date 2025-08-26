@@ -8,6 +8,8 @@
 #include <vtkActor.h>
 #include <vtkRegularPolygonSource.h> // 添加这行
 #include <QMap>
+#include <vtkAxesActor.h>  // 新增
+#include <vtkOrientationMarkerWidget.h>  // 新增
 
 class VTKDisplayWidget : public QWidget
 {
@@ -33,7 +35,12 @@ private:
     QMap<QString, vtkSmartPointer<vtkActor>> pointCloudActors;  // 键值对存储actor
     QMap<QString, vtkSmartPointer<vtkActor>> circleActors;  // 键值对存储圆形actor
 
+     // 新增：坐标轴缩略图相关
+    vtkSmartPointer<vtkAxesActor> axesActor;
+    vtkSmartPointer<vtkOrientationMarkerWidget> axesWidget;
+
     void setupCamera();
+    void setupAxesWidget();  // 新增方法
 };
 
 #endif // VTKDISPLAYWIDGET_H
