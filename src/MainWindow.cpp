@@ -103,6 +103,9 @@ void MainWindow::createCentralWidget()
 
 void MainWindow::setupConnection()
 {
+    // 连接点云文件可见性信号
+    connect(fileListDock, &FileListDock::fileChecked, this, &MainWindow::handleFileChecked);
+
     // 连接操作按钮的信号
     connect(operationButtonDock, &OperationButtonDock::detectCirclesRequested, 
             this, [this]() {
@@ -110,10 +113,9 @@ void MainWindow::setupConnection()
             });
     
     // 连接圆形检测信号
-    connect(imageDisplayWidget, &ImageDisplayWidget::circleDetected,
-            vtkDisplayWidget, &VTKDisplayWidget::displayCircle);
+    connect(imageDisplayWidget, &ImageDisplayWidget::circleDetected, vtkDisplayWidget, &VTKDisplayWidget::displayCircle);
 
-    connect(fileListDock, &FileListDock::fileChecked, this, &MainWindow::handleFileChecked);
+     // 连接元素可见性变化信号到属性更新
     connect(elementListDock, &ElementListDock::elementChecked, this, &MainWindow::handleElementChecked);
 
     // 连接元素列表的复选框状态变化
@@ -123,6 +125,9 @@ void MainWindow::setupConnection()
                     vtkDisplayWidget->setCircleVisible(name, checked);
                 }
             });
+
+    // 连接圆形检测信号到属性更新
+    connect(imageDisplayWidget, &ImageDisplayWidget::circleDetected, this, &MainWindow::handleCircleDetected);
 }
 
 void MainWindow::openFile()
@@ -157,7 +162,7 @@ void MainWindow::handleElementChecked(int index, bool checked)
         // 发射按名称检查的信号
         emit elementListDock->elementCheckedByName(elementName, checked);
         
-        // 原有的处理逻辑（可选保留）
+        // 原有的处理逻辑
         QRegularExpression re(R"(Circle \d+: Center \((\d+), (\d+)\), Radius (\d+))");
         QRegularExpressionMatch match = re.match(elementName);
         if (match.hasMatch()) {
@@ -172,4 +177,16 @@ void MainWindow::handleElementChecked(int index, bool checked)
             }
         }
     }
+}
+
+void MainWindow::handleCircleDetected(const QString& name, double centerX, double centerY, double radius)
+{
+    // 创建圆形属性
+    ElementProperties circleProps(ElementType::Circle);
+    circleProps.properties["Center X"] = centerX;
+    circleProps.properties["Center Y"] = centerY;
+    circleProps.properties["Radius"] = radius;
+    
+    // 更新属性显示
+    propertyDisplayDock->updateElementProperties(name, circleProps);
 }

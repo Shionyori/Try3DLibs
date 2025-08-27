@@ -23,6 +23,7 @@ private slots:
     void openFile();  
     void handleFileChecked(const QString& filePath, bool checked);
     void handleElementChecked(int index, bool checked);
+    void handleCircleDetected(const QString& name, double centerX, double centerY, double radius);
 
 private:
     ElementListDock* elementListDock;
