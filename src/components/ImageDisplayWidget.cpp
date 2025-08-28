@@ -34,11 +34,6 @@ void ImageDisplayWidget::setupUI()
         detectShapes();
     });
 
-    detectCirclesButton = new QPushButton("Detect Circles", this);
-    connect(detectCirclesButton, &QPushButton::clicked, this, [this]() {
-        detectCircles();
-    });
-
     zoomInButton = new QPushButton("+", this);
     zoomInButton->setFixedSize(30, 30);
     connect(zoomInButton, &QPushButton::clicked, this, [this]() {
@@ -64,7 +59,6 @@ void ImageDisplayWidget::setupUI()
     QHBoxLayout *operateButtonLayout = new QHBoxLayout();
     operateButtonLayout->addWidget(grayscaleButton);
     operateButtonLayout->addWidget(detectShapesButton);
-    operateButtonLayout->addWidget(detectCirclesButton);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->addWidget(scrollArea);
@@ -178,42 +172,6 @@ void ImageDisplayWidget::detectShapes()
         }
     }
     // 显示结果
-    QImage qImage(resultImage.data, resultImage.cols, resultImage.rows, resultImage.step, QImage::Format_BGR888);
-    currentPixmap = QPixmap::fromImage(qImage);
-    displayPixmap();
-}
-
-void ImageDisplayWidget::detectCircles()
-{
-    if (originalImage.empty()) {
-        QMessageBox::warning(this, "Warning", "No image loaded!");
-        return;
-    }
-
-    cv::Mat grayImage;
-    cv::cvtColor(originalImage, grayImage, cv::COLOR_BGR2GRAY);
-    cv::GaussianBlur(grayImage, grayImage, cv::Size(9, 9), 2, 2);
-
-    std::vector<cv::Vec3f> circles;
-    cv::HoughCircles(grayImage, circles, cv::HOUGH_GRADIENT, 1, grayImage.rows / 8, 200, 100);
-
-    cv::Mat resultImage = originalImage.clone();
-    for (size_t i = 0; i < circles.size(); i++) {
-        cv::Vec3i c = circles[i];
-        cv::Point center = cv::Point(c[0], c[1]);
-        int radius = c[2];
-
-        // Draw the circle center
-        cv::circle(resultImage, center, 3, cv::Scalar(0, 100, 100), cv::FILLED, cv::LINE_AA);
-        // Draw the circle outline
-        cv::circle(resultImage, center, radius, cv::Scalar(255, 0, 255), 3, cv::LINE_AA);
-
-        // Add circle to element list
-        QString circleName = QString("Circle %1: Center (%2, %3), Radius %4")
-                             .arg(i + 1).arg(c[0]).arg(c[1]).arg(c[2]);
-        elementListDock->addCircleElement(circleName); // 直接使用成员变量
-    }
-
     QImage qImage(resultImage.data, resultImage.cols, resultImage.rows, resultImage.step, QImage::Format_BGR888);
     currentPixmap = QPixmap::fromImage(qImage);
     displayPixmap();

@@ -26,7 +26,6 @@ public:
     void loadAndDisplayImage(const QString &filePath);
     void convertToGrayscale();
     void detectShapes();
-    void detectCircles();
     void setCircleDetectionMode(bool enabled);
 
 signals:
@@ -48,7 +47,6 @@ private:
     QPushButton *zoomInButton;
     QPushButton *zoomOutButton;
     QPushButton *detectShapesButton;
-    QPushButton *detectCirclesButton;
     QSlider *zoomSlider;
 
     cv::Mat originalImage;
