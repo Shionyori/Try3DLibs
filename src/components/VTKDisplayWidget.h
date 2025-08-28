@@ -25,22 +25,31 @@ public:
     
 public slots:
     void displayCircle(const QString& name, double centerX, double centerY, double radius);
+    void displayRectangle(const QString& name, double centerX, double centerY, double width, double height, double angle);
+
     void removeCircle(const QString& circleName);
-    void setCircleVisible(const QString& circleName, bool visible); // 新增方法
+    void removeRectangle(const QString& rectangleName);
+
+    void setCircleVisible(const QString& circleName, bool visible);
+    void setRectangleVisible(const QString& rectangleName, bool visible);
 
 private:
     QVTKOpenGLNativeWidget* vtkWidget;
     vtkSmartPointer<vtkGenericOpenGLRenderWindow> renderWindow;
     vtkSmartPointer<vtkRenderer> renderer;
     QMap<QString, vtkSmartPointer<vtkActor>> pointCloudActors;  // 键值对存储actor
-    QMap<QString, vtkSmartPointer<vtkActor>> circleActors;  // 键值对存储圆形actor
 
-     // 新增：坐标轴缩略图相关
+    QMap<QString, vtkSmartPointer<vtkActor>> circleActors;
+    QMap<QString, vtkSmartPointer<vtkActor>> rectangleActors;
+
     vtkSmartPointer<vtkAxesActor> axesActor;
     vtkSmartPointer<vtkOrientationMarkerWidget> axesWidget;
 
     void setupCamera();
-    void setupAxesWidget();  // 新增方法
+    void setupAxesWidget();
+
+    void createCircleActor(vtkSmartPointer<vtkActor>& actor, double centerX, double centerY, double radius);
+    void createRectangleActor(vtkSmartPointer<vtkActor>& actor, double centerX, double centerY, double width, double height, double angle);
 };
 
 #endif // VTKDISPLAYWIDGET_H

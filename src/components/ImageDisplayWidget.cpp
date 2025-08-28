@@ -183,6 +183,20 @@ void ImageDisplayWidget::setCircleDetectionMode(bool enabled)
     if (enabled) {
         setCursor(Qt::CrossCursor);
         QMessageBox::information(this, "Circle Detection", "Click on the image to detect circles near that point.");
+        rectangleDetectionMode = false;
+    } else {
+        setCursor(Qt::ArrowCursor);
+    }
+}
+
+void ImageDisplayWidget::setRectangleDetectionMode(bool enabled)
+{
+    rectangleDetectionMode = enabled;
+    if (enabled) {
+        setCursor(Qt::CrossCursor);
+        QMessageBox::information(this, "Rectangle Detection", "Click on the image to detect rectangles near that point.");
+        // 确保其他检测模式关闭
+        circleDetectionMode = false;
     } else {
         setCursor(Qt::ArrowCursor);
     }
@@ -190,7 +204,7 @@ void ImageDisplayWidget::setCircleDetectionMode(bool enabled)
 
 void ImageDisplayWidget::mousePressEvent(QMouseEvent *event)
 {
-    if (circleDetectionMode && event->button() == Qt::LeftButton) {
+    if ((circleDetectionMode || rectangleDetectionMode) && event->button() == Qt::LeftButton) {
         // 获取点击位置相对于imageLabel的坐标
         QPoint labelPos = imageLabel->mapFrom(this, event->pos());
         
@@ -218,8 +232,13 @@ void ImageDisplayWidget::mousePressEvent(QMouseEvent *event)
             static_cast<int>((labelPos.y() - yOffset) / zoomFactor)
         );
 
-        detectCirclesNearPoint(imagePos);
-    } else {
+        if (circleDetectionMode) {
+            detectCirclesNearPoint(imagePos);
+        } else if (rectangleDetectionMode) {
+            detectRectanglesNearPoint(imagePos);
+        }
+    } 
+    else {
         QWidget::mousePressEvent(event);
     }
 }
@@ -284,7 +303,7 @@ void ImageDisplayWidget::detectCirclesNearPoint(const QPoint &point)
     
     // 在原始图像上绘制狙击镜标识
     cv::Mat resultImage = originalImage.clone();
-    drawSniperScope(resultImage, cv::Point(imageX, imageY), radius);
+    drawCircleMarker(resultImage, cv::Point(imageX, imageY), radius);
     
     // 显示结果图像
     QImage qImage(resultImage.data, resultImage.cols, resultImage.rows, resultImage.step, QImage::Format_BGR888);
@@ -309,7 +328,125 @@ void ImageDisplayWidget::detectCirclesNearPoint(const QPoint &point)
     setCircleDetectionMode(false);
 }
 
-void ImageDisplayWidget::drawSniperScope(cv::Mat &image, const cv::Point &center, int radius)
+void ImageDisplayWidget::detectRectanglesNearPoint(const QPoint &point)
+{
+    if (originalImage.empty()) {
+        QMessageBox::warning(this, "Warning", "No image loaded!");
+        return;
+    }
+
+    // 定义检测区域（以点击点为中心的正方形区域）
+    int regionSize = 200; // 区域大小
+    int x = std::max(0, point.x() - regionSize / 2);
+    int y = std::max(0, point.y() - regionSize / 2);
+    int width = std::min(regionSize, originalImage.cols - x);
+    int height = std::min(regionSize, originalImage.rows - y);
+    
+    if (width <= 0 || height <= 0) return;
+    
+    // 提取感兴趣区域
+    cv::Mat roi = originalImage(cv::Rect(x, y, width, height));
+    
+    // 转换为灰度图
+    cv::Mat grayRoi;
+    cv::cvtColor(roi, grayRoi, cv::COLOR_BGR2GRAY);
+    
+    // 高斯模糊
+    cv::GaussianBlur(grayRoi, grayRoi, cv::Size(5, 5), 0);
+    
+    // 边缘检测
+    cv::Mat edges;
+    cv::Canny(grayRoi, edges, 50, 150);
+    
+    // 形态学操作，闭合边缘
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+    cv::morphologyEx(edges, edges, cv::MORPH_CLOSE, kernel);
+    
+    // 查找轮廓
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(edges, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    
+    if (contours.empty()) {
+        QMessageBox::information(this, "No Rectangles", "No rectangles detected near the clicked point.");
+        return;
+    }
+    
+    // 筛选轮廓并找到最接近点击点的矩形
+    int closestRectIdx = -1;
+    double minDistance = std::numeric_limits<double>::max();
+    std::vector<cv::RotatedRect> rects;
+    
+    for (size_t i = 0; i < contours.size(); i++) {
+        // 忽略太小的轮廓
+        if (contours[i].size() < 5) continue;
+        
+        // 计算轮廓面积
+        double area = cv::contourArea(contours[i]);
+        if (area < 100) continue; // 忽略太小的区域
+        
+        // 拟合矩形
+        cv::RotatedRect rect = cv::minAreaRect(contours[i]);
+        rects.push_back(rect);
+        
+        // 计算矩形中心到点击点的距离
+        cv::Point2f center = rect.center;
+        double distance = std::sqrt(std::pow(center.x + x - point.x(), 2) + 
+                                   std::pow(center.y + y - point.y(), 2));
+        
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestRectIdx = i;
+        }
+    }
+    
+    if (closestRectIdx == -1 || rects.empty()) {
+        QMessageBox::information(this, "No Rectangles", "No valid rectangles detected near the clicked point.");
+        return;
+    }
+    
+    cv::RotatedRect rect = rects[closestRectIdx];
+    
+    // 调整坐标到原始图像
+    rect.center.x += x;
+    rect.center.y += y;
+    
+    // 在原始图像上绘制矩形标记
+    cv::Mat resultImage = originalImage.clone();
+    drawRectangleMarker(resultImage, rect);
+    
+    // 显示结果图像
+    QImage qImage(resultImage.data, resultImage.cols, resultImage.rows, resultImage.step, QImage::Format_BGR888);
+    currentPixmap = QPixmap::fromImage(qImage);
+    displayPixmap();
+    
+    // 获取矩形属性
+    double centerX = rect.center.x;
+    double centerY = rect.center.y;
+    double rectWidth = rect.size.width;
+    double rectHeight = rect.size.height;
+    double angle = rect.angle;
+    
+    // 添加到元素列表
+    QString rectName = QString("Rectangle %1: Center (%2, %3), Size (%4×%5), Angle %6°")
+                      .arg(elementListDock->getTreeWidget()->topLevelItemCount() + 1)
+                      .arg(centerX).arg(centerY)
+                      .arg(rectWidth).arg(rectHeight)
+                      .arg(angle);
+    elementListDock->addRectangleElement(rectName, true);
+
+    // 处理图像坐标到VTK坐标的转换
+    double imageHeight = originalImage.rows;
+    double vtkX = centerX;
+    double vtkY = imageHeight - centerY;
+
+    // 发出信号通知属性窗口显示矩形属性
+    emit rectangleDetected(rectName, vtkX, vtkY, rectWidth, rectHeight, angle);
+    
+    // 退出检测模式
+    setRectangleDetectionMode(false);
+}
+
+void ImageDisplayWidget::drawCircleMarker(cv::Mat &image, const cv::Point &center, int radius)
 {
     // 绘制外圆
     cv::circle(image, center, radius + 20, cv::Scalar(0, 255, 0), 2);
@@ -329,9 +466,35 @@ void ImageDisplayWidget::drawSniperScope(cv::Mat &image, const cv::Point &center
     // 绘制内圆
     cv::circle(image, center, 5, cv::Scalar(0, 0, 255), 2);
     
-    // // 添加文本标注
-    // std::string text = "R: " + std::to_string(radius);
-    // cv::putText(image, text, 
-    //             cv::Point(center.x + radius + 5, center.y),
-    //             cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
+    // 添加文本标注
+    std::string text = "R: " + std::to_string(radius);
+    cv::putText(image, text, 
+                cv::Point(center.x + radius + 5, center.y),
+                cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
+}
+
+void ImageDisplayWidget::drawRectangleMarker(cv::Mat &image, const cv::RotatedRect& rect)
+{
+    cv::Point2f vertices[4];
+    rect.points(vertices);
+    
+    // 绘制矩形边框
+    for (int i = 0; i < 4; i++) {
+        cv::line(image, vertices[i], vertices[(i+1)%4], cv::Scalar(0, 255, 0), 2);
+    }
+    
+    // 绘制中心点
+    cv::circle(image, rect.center, 5, cv::Scalar(0, 0, 255), -1);
+    
+    // 绘制对角线
+    cv::line(image, vertices[0], vertices[2], cv::Scalar(255, 0, 0), 1);
+    cv::line(image, vertices[1], vertices[3], cv::Scalar(255, 0, 0), 1);
+    
+    // 添加文本标注
+    std::string text = "W: " + std::to_string((int)rect.size.width) + 
+                      ", H: " + std::to_string((int)rect.size.height) +
+                      ", A: " + std::to_string((int)rect.angle) + "°";
+    cv::putText(image, text, 
+                cv::Point(rect.center.x + 10, rect.center.y),
+                cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
 }

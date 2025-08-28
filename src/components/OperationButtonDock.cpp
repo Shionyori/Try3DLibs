@@ -12,7 +12,14 @@ OperationButtonDock::OperationButtonDock(QWidget *parent)
         emit detectCirclesRequested();
     });
     
+    detectRectanglesButton = new QPushButton("Detect Rectangles", buttonWidget);
+    connect(detectRectanglesButton, &QPushButton::clicked, this, [this]() {
+        emit detectRectanglesRequested();
+    });
+
     layout->addWidget(detectCirclesButton);
+    layout->addWidget(detectRectanglesButton);
+
     buttonWidget->setLayout(layout);
 
     setWidget(buttonWidget);

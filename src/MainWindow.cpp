@@ -111,9 +111,16 @@ void MainWindow::setupConnection()
             this, [this]() {
                 imageDisplayWidget->setCircleDetectionMode(true);
             });
+    connect(operationButtonDock, &OperationButtonDock::detectRectanglesRequested,
+            this, [this]() {
+                imageDisplayWidget->setRectangleDetectionMode(true);
+            });
     
-    // 连接圆形检测信号
-    connect(imageDisplayWidget, &ImageDisplayWidget::circleDetected, vtkDisplayWidget, &VTKDisplayWidget::displayCircle);
+    // 连接图形检测信号
+    connect(imageDisplayWidget, &ImageDisplayWidget::circleDetected, 
+        vtkDisplayWidget, &VTKDisplayWidget::displayCircle);
+    connect(imageDisplayWidget, &ImageDisplayWidget::rectangleDetected, 
+        vtkDisplayWidget, &VTKDisplayWidget::displayRectangle);
 
      // 连接元素可见性变化信号到属性更新
     connect(elementListDock, &ElementListDock::elementChecked, this, &MainWindow::handleElementChecked);
@@ -121,13 +128,21 @@ void MainWindow::setupConnection()
     // 连接元素列表的复选框状态变化
     connect(elementListDock, &ElementListDock::elementCheckedByName,
             this, [this](const QString& name, bool checked) {
-                if (vtkDisplayWidget) {
-                    vtkDisplayWidget->setCircleVisible(name, checked);
-                }
-            });
+        if (vtkDisplayWidget) {
+            // 判断元素类型并调用相应的可见性设置函数
+            if (name.startsWith("Circle")) {
+                vtkDisplayWidget->setCircleVisible(name, checked);
+            } else if (name.startsWith("Rectangle")) {
+                vtkDisplayWidget->setRectangleVisible(name, checked);
+            }
+        }
+    });
 
-    // 连接圆形检测信号到属性更新
-    connect(imageDisplayWidget, &ImageDisplayWidget::circleDetected, this, &MainWindow::handleCircleDetected);
+    // 连接图形检测信号到属性更新
+    connect(imageDisplayWidget, &ImageDisplayWidget::circleDetected, 
+        this, &MainWindow::handleCircleDetected);
+    connect(imageDisplayWidget, &ImageDisplayWidget::rectangleDetected, 
+        this, &MainWindow::handleRectangleDetected);
 }
 
 void MainWindow::openFile()
@@ -162,7 +177,6 @@ void MainWindow::handleElementChecked(int index, bool checked)
         // 发射按名称检查的信号
         emit elementListDock->elementCheckedByName(elementName, checked);
         
-        // 原有的处理逻辑
         QRegularExpression re(R"(Circle \d+: Center \((\d+), (\d+)\), Radius (\d+))");
         QRegularExpressionMatch match = re.match(elementName);
         if (match.hasMatch()) {
@@ -174,6 +188,21 @@ void MainWindow::handleElementChecked(int index, bool checked)
                 vtkDisplayWidget->displayCircle(elementName, centerX, centerY, radius);
             } else {
                 vtkDisplayWidget->removeCircle(elementName);
+            }
+        }
+        QRegularExpression rectRe(R"(Rectangle \d+: Center \((\d+\.?\d*), (\d+\.?\d*)\), Size \((\d+\.?\d*)×(\d+\.?\d*)\), Angle (\d+\.?\d*)°)");
+        QRegularExpressionMatch rectMatch = rectRe.match(elementName);
+        if (rectMatch.hasMatch()) {
+            double centerX = rectMatch.captured(1).toDouble();
+            double centerY = rectMatch.captured(2).toDouble();
+            double width = rectMatch.captured(3).toDouble();
+            double height = rectMatch.captured(4).toDouble();
+            double angle = rectMatch.captured(5).toDouble();
+            
+            if (checked) {
+                vtkDisplayWidget->displayRectangle(elementName, centerX, centerY, width, height, angle);
+            } else {
+                vtkDisplayWidget->removeRectangle(elementName);
             }
         }
     }
@@ -189,4 +218,18 @@ void MainWindow::handleCircleDetected(const QString& name, double centerX, doubl
     
     // 更新属性显示
     propertyDisplayDock->updateElementProperties(name, circleProps);
+}
+
+void MainWindow::handleRectangleDetected(const QString& name, double centerX, double centerY, double width, double height, double angle)
+{
+    // 创建矩形属性
+    ElementProperties rectProps(ElementType::Rectangle);
+    rectProps.properties["Center X"] = centerX;
+    rectProps.properties["Center Y"] = centerY;
+    rectProps.properties["Width"] = width;
+    rectProps.properties["Height"] = height;
+    rectProps.properties["Angle"] = angle;
+    
+    // 更新属性显示
+    propertyDisplayDock->updateElementProperties(name, rectProps);
 }

@@ -13,14 +13,14 @@ class OperationButtonDock : public QDockWidget
 
 public:
     OperationButtonDock(QWidget *parent = nullptr);
-    
-    QPushButton* getDetectCirclesButton() { return detectCirclesButton; }
 
 signals:
     void detectCirclesRequested();
+    void detectRectanglesRequested();
 
 private:
     QPushButton* detectCirclesButton;
+    QPushButton* detectRectanglesButton;
 };
 
 #endif // OPERATIONBUTTONDOCK_H

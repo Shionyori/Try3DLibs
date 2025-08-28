@@ -10,6 +10,7 @@
 // 元素类型枚举
 enum class ElementType {
     Circle,
+    Rectangle,
     // 未来可以添加其他类型
     Unknown
 };

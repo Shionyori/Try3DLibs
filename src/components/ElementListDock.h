@@ -14,12 +14,15 @@ class ElementListDock : public QDockWidget
 public:
     ElementListDock(QWidget *parent = nullptr);
     QTreeWidget* getTreeWidget() {return treeWidget;}
+
+    void setElementChecked(int index, bool checked);
+    
     void addCircleElement(const QString& name, bool checked = false);
-    void setElementChecked(int index, bool checked); // 新增方法
+    void addRectangleElement(const QString& name, bool checked = false);
     
 signals:
     void elementChecked(int index, bool checked);
-    void elementCheckedByName(const QString& name, bool checked); // 新增信号
+    void elementCheckedByName(const QString& name, bool checked);
 
 private:
     QTreeWidget* treeWidget;

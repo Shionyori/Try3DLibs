@@ -39,3 +39,12 @@ void ElementListDock::addCircleElement(const QString& name, bool checked)
     item->setCheckState(1, checked ? Qt::Checked : Qt::Unchecked);
     treeWidget->addTopLevelItem(item);
 }
+
+void ElementListDock::addRectangleElement(const QString& name, bool checked)
+{
+    QTreeWidgetItem* item = new QTreeWidgetItem(treeWidget);
+    item->setText(0, name);
+    item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+    item->setCheckState(1, checked ? Qt::Checked : Qt::Unchecked);
+    treeWidget->addTopLevelItem(item);
+}

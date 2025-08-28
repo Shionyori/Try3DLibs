@@ -21,9 +21,12 @@ public:
 
 private slots:
     void openFile();  
+    
     void handleFileChecked(const QString& filePath, bool checked);
     void handleElementChecked(int index, bool checked);
+
     void handleCircleDetected(const QString& name, double centerX, double centerY, double radius);
+    void handleRectangleDetected(const QString& name, double centerX, double centerY, double width, double height, double angle);
 
 private:
     ElementListDock* elementListDock;

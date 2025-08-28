@@ -113,6 +113,8 @@ QStringList PropertyDisplayDock::getPropertyNamesForType(ElementType type) const
     switch (type) {
         case ElementType::Circle:
             return {"Center X", "Center Y", "Radius"};
+        case ElementType::Rectangle:
+            return {"Center X", "Center Y", "Width", "Height", "Angle"};
         default:
             return QStringList();
     }
@@ -123,6 +125,8 @@ QString PropertyDisplayDock::getDisplayNameForType(ElementType type) const
     switch (type) {
         case ElementType::Circle:
             return "Circle";
+        case ElementType::Rectangle:
+            return "Rectangle";
         default:
             return "Unknown";
     }

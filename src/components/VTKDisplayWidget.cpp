@@ -120,13 +120,64 @@ void VTKDisplayWidget::setupCamera()
     renderWindow->Render();
 }
 
+void VTKDisplayWidget::setupAxesWidget()
+{
+    // 创建坐标轴actor
+    axesActor = vtkSmartPointer<vtkAxesActor>::New();
+    axesActor->SetShaftTypeToCylinder();
+    axesActor->SetXAxisLabelText("X");
+    axesActor->SetYAxisLabelText("Y");
+    axesActor->SetZAxisLabelText("Z");
+    axesActor->SetTotalLength(1.0, 1.0, 1.0);
+    axesActor->SetCylinderRadius(0.5 * axesActor->GetCylinderRadius());
+    axesActor->SetConeRadius(1.025 * axesActor->GetConeRadius());
+    axesActor->SetSphereRadius(1.5 * axesActor->GetSphereRadius());
+    
+    // 创建方向标记widget
+    axesWidget = vtkSmartPointer<vtkOrientationMarkerWidget>::New();
+    axesWidget->SetOutlineColor(0.9300, 0.5700, 0.1300);
+    axesWidget->SetOrientationMarker(axesActor);
+    axesWidget->SetInteractor(renderWindow->GetInteractor());
+    axesWidget->SetViewport(0.0, 0.0, 0.2, 0.2);  // 设置在左下角
+    axesWidget->SetEnabled(true);
+    axesWidget->InteractiveOff();  // 设置为非交互式
+}
+
 void VTKDisplayWidget::displayCircle(const QString& name, double centerX, double centerY, double radius)
 {
     if (circleActors.contains(name)) {
         // 更新现有圆形
         removeCircle(name);
     }
+
+    vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
+    createCircleActor(actor, centerX, centerY, radius);
     
+    renderer->AddActor(actor);
+    circleActors[name] = actor;
+    
+    renderWindow->Render();
+}
+
+void VTKDisplayWidget::removeCircle(const QString& circleName)
+{
+    if (circleActors.contains(circleName)) {
+        renderer->RemoveActor(circleActors[circleName]);
+        circleActors.remove(circleName);
+        renderWindow->Render();
+    }
+}
+
+void VTKDisplayWidget::setCircleVisible(const QString& circleName, bool visible)
+{
+    if (circleActors.contains(circleName)) {
+        circleActors[circleName]->SetVisibility(visible ? 1 : 0);
+        renderWindow->Render();
+    }
+}
+
+void VTKDisplayWidget::createCircleActor(vtkSmartPointer<vtkActor>& actor, double centerX, double centerY, double radius)
+{
     // 创建圆上的点集
     auto points = vtkSmartPointer<vtkPoints>::New();
     const int numPoints = 100; // 圆的点数，更多点数会更平滑
@@ -171,54 +222,89 @@ void VTKDisplayWidget::displayCircle(const QString& name, double centerX, double
     // 创建映射器和actor
     auto mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
     mapper->SetInputData(polyData);
-    
-    auto actor = vtkSmartPointer<vtkActor>::New();
+
     actor->SetMapper(mapper);
     actor->GetProperty()->SetColor(0.0, 0.0, 0.0); // 黑色
     actor->GetProperty()->SetLineWidth(2.0); // 线宽
+}
+
+void VTKDisplayWidget::displayRectangle(const QString& name, double centerX, double centerY, double width, double height, double angle)
+{
+    if (rectangleActors.contains(name)) {
+        removeRectangle(name);
+    }
+    
+    vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
+    createRectangleActor(actor, centerX, centerY, width, height, angle);
     
     renderer->AddActor(actor);
-    circleActors[name] = actor;
+    rectangleActors[name] = actor;
     
     renderWindow->Render();
 }
 
-void VTKDisplayWidget::removeCircle(const QString& circleName)
+void VTKDisplayWidget::removeRectangle(const QString& rectangleName)
 {
-    if (circleActors.contains(circleName)) {
-        renderer->RemoveActor(circleActors[circleName]);
-        circleActors.remove(circleName);
+    if (rectangleActors.contains(rectangleName)) {
+        renderer->RemoveActor(rectangleActors[rectangleName]);
+        rectangleActors.remove(rectangleName);
         renderWindow->Render();
     }
 }
 
-void VTKDisplayWidget::setCircleVisible(const QString& circleName, bool visible)
+void VTKDisplayWidget::setRectangleVisible(const QString& rectangleName, bool visible)
 {
-    if (circleActors.contains(circleName)) {
-        circleActors[circleName]->SetVisibility(visible ? 1 : 0);
+    if (rectangleActors.contains(rectangleName)) {
+        rectangleActors[rectangleName]->SetVisibility(visible ? 1 : 0);
         renderWindow->Render();
     }
 }
 
-void VTKDisplayWidget::setupAxesWidget()
+void VTKDisplayWidget::createRectangleActor(vtkSmartPointer<vtkActor>& actor, double centerX, double centerY, double width, double height, double angle)
 {
-    // 创建坐标轴actor
-    axesActor = vtkSmartPointer<vtkAxesActor>::New();
-    axesActor->SetShaftTypeToCylinder();
-    axesActor->SetXAxisLabelText("X");
-    axesActor->SetYAxisLabelText("Y");
-    axesActor->SetZAxisLabelText("Z");
-    axesActor->SetTotalLength(1.0, 1.0, 1.0);
-    axesActor->SetCylinderRadius(0.5 * axesActor->GetCylinderRadius());
-    axesActor->SetConeRadius(1.025 * axesActor->GetConeRadius());
-    axesActor->SetSphereRadius(1.5 * axesActor->GetSphereRadius());
+    // 创建矩形的四个角点
+    auto points = vtkSmartPointer<vtkPoints>::New();
+    double halfWidth = width / 2.0;
+    double halfHeight = height / 2.0;
     
-    // 创建方向标记widget
-    axesWidget = vtkSmartPointer<vtkOrientationMarkerWidget>::New();
-    axesWidget->SetOutlineColor(0.9300, 0.5700, 0.1300);
-    axesWidget->SetOrientationMarker(axesActor);
-    axesWidget->SetInteractor(renderWindow->GetInteractor());
-    axesWidget->SetViewport(0.0, 0.0, 0.2, 0.2);  // 设置在左下角
-    axesWidget->SetEnabled(true);
-    axesWidget->InteractiveOff();  // 设置为非交互式
+    // 计算旋转后的四个角点
+    double radAngle = vtkMath::RadiansFromDegrees(angle);
+    double cosAngle = cos(radAngle);
+    double sinAngle = sin(radAngle);
+    
+    // 四个角点（未旋转前）
+    double corners[4][2] = {
+        {-halfWidth, -halfHeight},
+        {halfWidth, -halfHeight},
+        {halfWidth, halfHeight},
+        {-halfWidth, halfHeight}
+    };
+    
+    for (int i = 0; i < 4; ++i) {
+        double x = corners[i][0] * cosAngle - corners[i][1] * sinAngle + centerX;
+        double y = corners[i][0] * sinAngle + corners[i][1] * cosAngle + centerY;
+        points->InsertNextPoint(x, y, 0);
+    }
+    
+    // 创建线源来表示矩形的边（多段线）
+    auto lines = vtkSmartPointer<vtkCellArray>::New();
+    vtkIdType pointIds[2];
+    for (int i = 0; i < 4; ++i) {
+        pointIds[0] = i;
+        pointIds[1] = (i + 1) % 4; // 闭环：最后一个点与第一个点连接
+        lines->InsertNextCell(2, pointIds);
+    }
+    
+    // 创建PolyData并设置点和线
+    auto polyData = vtkSmartPointer<vtkPolyData>::New();
+    polyData->SetPoints(points);
+    polyData->SetLines(lines);
+    
+    // 创建映射器和actor
+    auto mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+    mapper->SetInputData(polyData);
+    
+    actor->SetMapper(mapper);
+    actor->GetProperty()->SetColor(0.0, 0.0, 0.0); // 黑色
+    actor->GetProperty()->SetLineWidth(2.0); // 线宽
 }
